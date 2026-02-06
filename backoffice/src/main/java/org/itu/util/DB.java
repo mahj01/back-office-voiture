@@ -25,15 +25,13 @@ public class DB {
 
     public void connect() {
         try {
-            // Ensure the JDBC driver is loaded (helps when webapp classloader isolation prevents auto-registration)
-            try {
-                Class.forName("org.postgresql.Driver");
-            } catch (ClassNotFoundException cnfe) {
-                System.out.println("JDBC Driver class not found: " + cnfe.getMessage());
-            }
+            Class.forName("org.postgresql.Driver");
             String url = "jdbc:postgresql://" + host + ":" + port + "/" + database;
             connection = DriverManager.getConnection(url, user, password);
             System.out.println("Connexion réussie à la base '" + database + "' sur " + host + ":" + port);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Driver PostgreSQL non trouvé : " + e.getMessage());
+            connection = null;
         } catch (SQLException e) {
             System.out.println("Erreur de connexion : " + e.getMessage());
             connection = null;

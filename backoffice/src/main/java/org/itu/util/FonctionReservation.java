@@ -2,8 +2,10 @@ package org.itu.util;
 
 import java.util.ArrayList;
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.itu.entity.Hotel;
 import org.itu.entity.Reservation;
 import org.itu.entity.Hotel;
 
@@ -12,20 +14,6 @@ public class FonctionReservation {
 
     public FonctionReservation(DB db) {
         this.db = db;
-    }
-
-    public void createReservation(int idClient, int idHotel, java.sql.Date dateArrivee, int nombrePassagers) {
-        String sql = "INSERT INTO reservation (idClient, idHotel, dateArrivee, nombrePassagers) VALUES (?, ?, ?, ?)";
-        try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
-            stmt.setInt(1, idClient);
-            stmt.setInt(2, idHotel);
-            stmt.setDate(3, dateArrivee);
-            stmt.setInt(4, nombrePassagers);
-            stmt.executeUpdate();
-            System.out.println("Réservation créée avec succès.");
-        } catch (java.sql.SQLException e) {
-            System.out.println("Erreur lors de la création de la réservation : " + e.getMessage());
-        }
     }
 
     public List<Reservation> getAllReservations() {
@@ -37,7 +25,7 @@ public class FonctionReservation {
                 Reservation res = new Reservation(
                     rs.getInt("id"),
                     rs.getInt("idClient"),
-                    rs.getDate("dateArrivee"),
+                    rs.getTimestamp("dateArrivee"),
                     rs.getInt("nombrePassagers"),
                     this.getByIdHotel(rs.getInt("idHotel"))
                 );
@@ -68,12 +56,30 @@ public class FonctionReservation {
         return null; 
     }
 
+    public List<Hotel> getAllHotels() {
+        List<Hotel> hotels = new ArrayList<>();
+        String sql = "SELECT * FROM hotel";
+        try (java.sql.Statement stmt = db.getConnection().createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Hotel hotel = new Hotel(
+                    rs.getInt("id"),
+                    rs.getString("nom")
+                );
+                hotels.add(hotel);
+            }
+        } catch (java.sql.SQLException e) {
+            System.out.println("Erreur lors de la récupération des hôtels : " + e.getMessage());
+        }
+        return hotels;
+    }
+
     public List<Reservation> filterByDate(Date dateArriver)
     {
-        String sql = "SELECT * FROM reservation WHERE dateArrivee = ?";
+        String sql = "SELECT * FROM reservation WHERE DATE(dateArrivee) = ?";
         List<Reservation> reponse = new  ArrayList<>();
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
-            stmt.setDate(1, (Date) dateArriver);
+            stmt.setDate(1, dateArriver);
             try (java.sql.ResultSet rs = stmt.executeQuery()) {
             
                 while (rs.next()) {
@@ -81,7 +87,7 @@ public class FonctionReservation {
                     Reservation r =  new Reservation(
                         rs.getInt("id"),
                         rs.getInt("idClient"),
-                        rs.getDate("dateArrivee"),
+                        rs.getTimestamp("dateArrivee"),
                         rs.getInt("nombrePassagers"),
                         this.getByIdHotel(rs.getInt("idHotel"))
                     );
