@@ -1,11 +1,13 @@
 package org.itu.util;
 
+import java.util.ArrayList;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.itu.entity.Hotel;
 import org.itu.entity.Reservation;
+import org.itu.entity.Hotel;
 
 public class FonctionReservation {
     private DB db;

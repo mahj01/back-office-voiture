@@ -1,0 +1,15 @@
+TL : ETU003275 @mahj01
+DEV1: ETU003342 @tonioluc
+DEV2: ETU003344 @eddou313
+
+TACHES:
+Backoffice:
+	branche: sprint/1/1-creer-entite-reservation @eddou313
+		tache: creation entite, insertion reservation
+
+	branche: sprint/1/2-creer-entite-hotela @tonioluc
+		tache: creation script insertion hotel
+
+Frontoffice:
+	branche: sprint/1/1-liste-reservation @tonioluc
+		tache: page de liste reservation avec filtre par date
