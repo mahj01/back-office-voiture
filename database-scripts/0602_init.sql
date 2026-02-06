@@ -40,6 +40,7 @@ CREATE TABLE reservation (
     idClient INTEGER NOT NULL,
     idHotel INTEGER NOT NULL REFERENCES hotel(id),
     dateArrivee TIMESTAMP NOT NULL,
+    nombrePassagers INTEGER NOT NULL,
     FOREIGN KEY (idHotel) REFERENCES hotel(id)
 );
 
@@ -47,3 +48,5 @@ CREATE TABLE staging.hotel (LIKE dev.hotel INCLUDING ALL);
 CREATE TABLE prod.hotel (LIKE dev.hotel INCLUDING ALL);
 CREATE TABLE staging.reservation (LIKE dev.reservation INCLUDING ALL);
 CREATE TABLE prod.reservation (LIKE dev.reservation INCLUDING ALL);
+
+-- psql -U app_dev -d voiture_reservation -h localhost
