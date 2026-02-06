@@ -13,21 +13,21 @@
   <url>http://maven.apache.org</url>
   <dependencies>
     <dependency>
-    <groupId>com.itu</groupId>
-    <artifactId>url-echo-servlet</artifactId>
-    <version>1.0</version>
-    <scope>system</scope>
-    <systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/url-echo-servlet-1.0.jar</systemPath>
-</dependency>
+      <groupId>com.itu</groupId>
+      <artifactId>url-echo-servlet</artifactId>
+      <version>1.0</version>
+    </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <version>6.1.0</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.platform</groupId>
       <artifactId>jakarta.jakartaee-api</artifactId>
       <version>10.0.0</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-beanutils</groupId>
@@ -49,8 +49,25 @@
         <artifactId>postgresql</artifactId>
         <version>42.6.0</version>
     </dependency>
+    <dependency>
+        <groupId>org.glassfish.web</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+        <version>3.0.1</version>
+    </dependency>
+    <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>3.0.0</version>
+    </dependency>
   </dependencies>
   <build>
     <finalName>frameworktest</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.3.2</version>
+      </plugin>
+    </plugins>
   </build>
 </project>

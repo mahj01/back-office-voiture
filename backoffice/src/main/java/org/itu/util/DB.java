@@ -25,9 +25,13 @@ public class DB {
 
     public void connect() {
         try {
+            Class.forName("org.postgresql.Driver");
             String url = "jdbc:postgresql://" + host + ":" + port + "/" + database;
             connection = DriverManager.getConnection(url, user, password);
             System.out.println("Connexion réussie à la base '" + database + "' sur " + host + ":" + port);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Driver PostgreSQL non trouvé : " + e.getMessage());
+            connection = null;
         } catch (SQLException e) {
             System.out.println("Erreur de connexion : " + e.getMessage());
             connection = null;
