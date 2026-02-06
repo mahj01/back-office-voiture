@@ -1,6 +1,5 @@
 package org.itu.util;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.sql.Date;
 import java.util.List;
@@ -59,8 +58,7 @@ public class FonctionReservation {
                 if (rs.next()) {
                     return new Hotel(
                         rs.getInt("id"),
-                        rs.getString("nom"),
-                        rs.getString("adresse")
+                        rs.getString("nom")
                     );
                 }
             }
