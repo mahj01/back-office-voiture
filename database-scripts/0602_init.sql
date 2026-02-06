@@ -48,3 +48,5 @@ CREATE TABLE staging.hotel (LIKE dev.hotel INCLUDING ALL);
 CREATE TABLE prod.hotel (LIKE dev.hotel INCLUDING ALL);
 CREATE TABLE staging.reservation (LIKE dev.reservation INCLUDING ALL);
 CREATE TABLE prod.reservation (LIKE dev.reservation INCLUDING ALL);
+
+-- psql -U app_dev -d voiture_reservation -h localhost
