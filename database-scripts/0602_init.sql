@@ -40,6 +40,7 @@ CREATE TABLE reservation (
     idClient INTEGER NOT NULL,
     idHotel INTEGER NOT NULL REFERENCES hotel(id),
     dateArrivee TIMESTAMP NOT NULL,
+    nombrePassagers INTEGER NOT NULL,
     FOREIGN KEY (idHotel) REFERENCES hotel(id)
 );
 
