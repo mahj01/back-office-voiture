@@ -2,3 +2,4 @@
 .env
 /backoffice/.idea
 *.jar
+deploy.sh

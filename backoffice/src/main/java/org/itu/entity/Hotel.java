@@ -8,13 +8,21 @@ public class Hotel {
         this.nom = nom;
     }
 
+
     public Hotel(Integer id, String nom) {
         this.id = id;
         this.nom = nom;
     }
 
+    public Hotel(Integer id, String nom, String adresse) {
+        this.id = id;
+        this.nom = nom;
+        this.adresse = adresse;
+    }
+
     Integer id;
     String nom;
+    String adresse;
 
     public Integer getId() {
         return id;
@@ -30,5 +38,13 @@ public class Hotel {
 
     public void setNom(String nom) {
         this.nom = nom;
+    }
+
+    public String getAdresse() {
+        return adresse;
+    }
+
+    public void setAdresse(String adresse) {
+        this.adresse = adresse;
     }
 }
