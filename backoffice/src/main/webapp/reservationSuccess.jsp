@@ -60,12 +60,12 @@
 
 <div class="success-container">
     <div class="success-icon">✓</div>
-    <h2>${message}</h2>
+    <h2><% out.print(request.getAttribute("message")); %></h2>
     
     <div class="details">
-        <p><strong>ID Client:</strong> ${reservation.idClient}</p>
-        <p><strong>Date d'arrivée:</strong> ${reservation.dateArriver}</p>
-        <p><strong>Nombre de passagers:</strong> ${reservation.nombrePassager}</p>
+        <p><strong>ID Client:</strong> <% out.print(((org.itu.entity.Reservation)request.getAttribute("reservation")).getIdClient()); %></p>
+        <p><strong>Date d'arrivée:</strong> <% out.print(((org.itu.entity.Reservation)request.getAttribute("reservation")).getDateArriver()); %></p>
+        <p><strong>Nombre de passagers:</strong> <% out.print(((org.itu.entity.Reservation)request.getAttribute("reservation")).getNombrePassager()); %></p>
     </div>
     
     <a href="createReservation.jsp" class="btn-back">Nouvelle Réservation</a>

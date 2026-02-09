@@ -72,7 +72,7 @@ public class ReservationController {
     @PostMapping
     @UrlAnnotation(url = "/create")
     public ModelView createReservation(Reservation reservation) {
-        ModelView mv = new ModelView("reservationSuccess.jsp");
+        ModelView mv = new ModelView("/reservationSuccess.jsp");
 
         DB db = openDb();
         try {
@@ -81,7 +81,6 @@ public class ReservationController {
 
             mv.addAttribute("message", "Réservation créée avec succès");
             mv.addAttribute("reservation", reservation);
-
             return mv;
         } finally {
             db.disconnect();
