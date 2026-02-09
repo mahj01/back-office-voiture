@@ -3,3 +3,4 @@
 /backoffice/.idea
 deploy.sh
 deploy.bat
+backoffice/src/main/webapp/WEB-INF/lib/url-echo-servlet-1.0-source.jar
