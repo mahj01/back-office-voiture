@@ -50,3 +50,10 @@ CREATE TABLE staging.reservation (LIKE dev.reservation INCLUDING ALL);
 CREATE TABLE prod.reservation (LIKE dev.reservation INCLUDING ALL);
 
 -- psql -U app_dev -d voiture_reservation -h localhost
+
+insert into hotel (nom) values ('Hotel A');
+insert into hotel (nom) values ('Hotel B');
+insert into hotel (nom) values ('Hotel C');
+
+delete from hotel;
+delete from reservation;
