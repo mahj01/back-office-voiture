@@ -18,24 +18,23 @@ import com.itu.UrlAnnotation;
 @ControllerAnnotation(url="reservation")
 public class ReservationController {
 
-    private static String host="localhost";
-    private static String database="voiture_reservation";
-    private static String user="app_dev";
-    private static String password="dev_pwd";
-    private static int port=5432;
+    private DB openDb() {
+        DB db = DB.fromEnv();
+        db.connect();
+        return db;
+    }
 
     @JsonAnnotation
     @GetMapping
     @UrlAnnotation(url = "/liste")
     public List<Reservation> ListeReservation() {
-        List<Reservation> allReservation;
-
-        DB db = new DB(host, port, database, user, password);
-        db.connect();
-        FonctionReservation fc = new FonctionReservation(db);
-        allReservation=fc.getAllReservations();
-
-        return allReservation;
+        DB db = openDb();
+        try {
+            FonctionReservation fc = new FonctionReservation(db);
+            return fc.getAllReservations();
+        } finally {
+            db.disconnect();
+        }
     }
 
     @JsonAnnotation
@@ -44,13 +43,14 @@ public class ReservationController {
     public List<Reservation> FilteByDate(@RequestParam("dateArriver") String dateArriverStr) {
         // Format attendu: yyyy-MM-dd (ex: 2026-02-06)
         Date dateArriver = Date.valueOf(dateArriverStr);
-        
-        DB db = new DB(host, port, database, user, password);
-        db.connect();
-        FonctionReservation fc = new FonctionReservation(db);
-        List<Reservation> allReservation = fc.filterByDate(dateArriver);
 
-        return allReservation;
+        DB db = openDb();
+        try {
+            FonctionReservation fc = new FonctionReservation(db);
+            return fc.filterByDate(dateArriver);
+        } finally {
+            db.disconnect();
+        }
     }
 
 
@@ -58,29 +58,34 @@ public class ReservationController {
     @UrlAnnotation(url = "/saisie")
     public ModelView saisie() {
         ModelView mv = new ModelView("/createReservation.jsp");
-        
-        DB db = new DB(host, port, database, user, password);
-        db.connect();
-        FonctionReservation fc = new FonctionReservation(db);
-        mv.addAttribute("hotels", fc.getAllHotels());
-        
-        return mv;
+
+        DB db = openDb();
+        try {
+            FonctionReservation fc = new FonctionReservation(db);
+            mv.addAttribute("hotels", fc.getAllHotels());
+            return mv;
+        } finally {
+            db.disconnect();
+        }
     }
 
     @PostMapping
     @UrlAnnotation(url = "/create")
     public ModelView createReservation(Reservation reservation) {
         ModelView mv = new ModelView("reservationSuccess.jsp");
-        
-        DB db = new DB(host, port, database, user, password);
-        db.connect();
-        reservation.connect(db);
-        reservation.createReservation();
-        
-        mv.addAttribute("message", "Réservation créée avec succès");
-        mv.addAttribute("reservation", reservation);
-        
-        return mv;
+
+        DB db = openDb();
+        try {
+            reservation.connect(db);
+            reservation.createReservation();
+
+            mv.addAttribute("message", "Réservation créée avec succès");
+            mv.addAttribute("reservation", reservation);
+
+            return mv;
+        } finally {
+            db.disconnect();
+        }
     }
 
 }

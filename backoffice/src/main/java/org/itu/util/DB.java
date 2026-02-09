@@ -14,6 +14,9 @@ public class DB {
 
     private Connection connection;
 
+    /**
+     * Backward-compatible constructor.
+     */
     public DB(String host, int port, String database, String user, String password) {
         this.host = host;
         this.port = port;
@@ -21,6 +24,20 @@ public class DB {
         this.user = user;
         this.password = password;
         this.connection = null;
+    }
+
+    /**
+     * Preferred constructor: inject config loaded from .env / environment.
+     */
+    public DB(DbConfig config) {
+        this(config.getHost(), config.getPort(), config.getDatabase(), config.getUser(), config.getPassword());
+    }
+
+    /**
+     * Convenience factory to create a DB instance using .env variables.
+     */
+    public static DB fromEnv() {
+        return new DB(DbConfig.fromEnv());
     }
 
     public void connect() {

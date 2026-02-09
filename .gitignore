@@ -3,3 +3,4 @@
 /backoffice/.idea
 *.jar
 deploy.sh
+deploy.bat
