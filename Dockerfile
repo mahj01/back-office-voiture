@@ -5,8 +5,8 @@
 # Etape 1: Build avec Maven
 FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /workspace
-COPY pom.xml ./
-COPY src ./src
+COPY ./backoffice/pom.xml ./
+COPY ./backoffice/src ./src
 RUN mvn -B -DskipTests clean package
 
 # Etape 2: Déploiement sur Tomcat
