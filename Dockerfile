@@ -7,7 +7,7 @@ FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /workspace
 COPY ./backoffice/pom.xml ./
 COPY ./backoffice/src ./src
-RUN mvn -B -DskipTests clean package
+# RUN mvn -B -DskipTests clean package
 
 # Etape 2: Déploiement sur Tomcat
 FROM tomcat:10.1-jdk17-temurin
