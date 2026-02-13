@@ -3,7 +3,7 @@ sprint-2
         -id 
         -reference
         -nombre place
-        -type carburant ('D','E','H','El') 
+        -type carburant ('D','Es','H','El') 
     Asa 1 : Manao CRUD Vehicule (Liste , modifier , supprimer , Ajouter)
     Asa 2 : Proteger appel API
         -Mi creer table token (id, valeur (afak generena mampiasa GUID , UID 16 caractere oatra) , date d'expiration(misy heure))
