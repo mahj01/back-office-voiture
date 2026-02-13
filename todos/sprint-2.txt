@@ -10,4 +10,5 @@ sprint-2
     Feature 1 : Manao CRUD Vehicule (Liste , modifier , supprimer , Ajouter) 
     Feature 2 : Proteger appel API
         -Mi creer table token (id, valeur (afak generena mampiasa GUID , UID 16 caractere oatra) , date d'expiration(misy heure))
+        -Initialisation des donnees de token (seeder)
         -Fonction qui verifie le token envoye par le front office
