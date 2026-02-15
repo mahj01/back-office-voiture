@@ -1,0 +1,22 @@
+
+Ajoute Vitesse moyenne=30km/h
+TA(temps d attente)=30mn
+
+Hotel : ajoute aeroport
+Lieu : id , code , lieu
+Distance : id,from ,to,km
+
+NB: creation des script d initiation des tables
+
+Action:
+    Date -> liste vehicule(avec detail: lieux,departAeroport,ArriverAeroport,reservation hoentiny)
+Fonctionnaliter:
+    -nbrPassager >=nbrPlace
+    -Si il y a une reservation a une dateHeure(12-12-2025 11:00),et il y a 12 personne, alors il est assigner a une voiture proche pas le maximal de nbr place(ts misarak ilay olon f meme voiture) 
+    -rah mis mitovy dia izay diesel 
+    -d raha mbol mitovy dia random
+    
+Attendue:
+
+Preparation des script 
+Page : insertion date-> liste trajet avec les info: les reservation
