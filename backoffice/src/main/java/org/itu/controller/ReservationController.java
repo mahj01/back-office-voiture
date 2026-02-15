@@ -6,6 +6,8 @@ import java.util.List;
 import org.itu.entity.Reservation;
 import org.itu.util.DB;
 import org.itu.util.FonctionReservation;
+import org.itu.util.TokenHandler;
+import org.itu.util.ErrorResponse;
 
 import com.itu.ControllerAnnotation;
 import com.itu.GetMapping;
@@ -27,7 +29,12 @@ public class ReservationController {
     @JsonAnnotation
     @GetMapping
     @UrlAnnotation(url = "/liste")
-    public List<Reservation> ListeReservation() {
+    public Object ListeReservation(@RequestParam("token") String token) {
+        // Validate token before returning data
+        if (!TokenHandler.isTokenValid(token)) {
+            return new ErrorResponse(false, "Invalid or missing token");
+        }
+
         DB db = openDb();
         try {
             FonctionReservation fc = new FonctionReservation(db);
@@ -40,7 +47,12 @@ public class ReservationController {
     @JsonAnnotation
     @GetMapping
     @UrlAnnotation(url = "/liste/{dateArriver}")
-    public List<Reservation> FilteByDate(@RequestParam("dateArriver") String dateArriverStr) {
+    public Object FilteByDate(@RequestParam("dateArriver") String dateArriverStr, @RequestParam("token") String token) {
+        // Validate token before returning data
+        if (!TokenHandler.isTokenValid(token)) {
+            return new ErrorResponse(false, "Invalid or missing token");
+        }
+
         // Format attendu: yyyy-MM-dd (ex: 2026-02-06)
         Date dateArriver = Date.valueOf(dateArriverStr);
 
@@ -68,6 +80,7 @@ public class ReservationController {
             db.disconnect();
         }
     }
+
 
     @PostMapping
     @UrlAnnotation(url = "/create")
