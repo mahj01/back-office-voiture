@@ -1,22 +1,33 @@
+Sprint 3:
+    TL: 3344 Eddou
+    Developper 1: 3275 Manampy
+    Developper 2: 3342 Antonio
 
-Ajoute Vitesse moyenne=30km/h
-TA(temps d attente)=30mn
+    MCD:
+        Lieu : id, code, lieu
+        Distance : id, From, to, km
+        voiture : add VM(vitesse moyenne),TA(temps d'attente)
+        reservation : add idAeroport
+        aeroport : id , nom , idlieu
+        gestionVoiture : id , idVoiture , idReservation , date 
 
-Hotel : ajoute aeroport
-Lieu : id , code , lieu
-Distance : id,from ,to,km
+        NB : Ajoute une script d'initiation des tables pour vider les tables  
 
-NB: creation des script d initiation des tables
+    Regle de gestion de voiture:
+        -(1) nbrPassager >=nbrPlace
+        -(2) Si il y a une reservation a une dateHeure(12-12-2025 11:00) ,et il y a 12 personne , alors il est assigner a une voiture proche pas le maximal de nbr place(ts misarak ilay olon f meme voiture) 
+        -(3) rah mis maro ilay voiture dia izay type diesel no anasina  
+        -(4) d raha mbol maro mitovy dia random
 
-Action:
-    Date -> liste vehicule(avec detail: lieux,departAeroport,ArriverAeroport,reservation hoentiny)
-Fonctionnaliter:
-    -nbrPassager >=nbrPlace
-    -Si il y a une reservation a une dateHeure(12-12-2025 11:00),et il y a 12 personne, alors il est assigner a une voiture proche pas le maximal de nbr place(ts misarak ilay olon f meme voiture) 
-    -rah mis mitovy dia izay diesel 
-    -d raha mbol mitovy dia random
-    
-Attendue:
+    Dev 1 : 
+        - integrer les changement dans voiture(CRUD)
+        - integrer les changement dans reservation(CRUD)
+        - page liste des vehicule avec filtre par date 
+    Dev 2 :
+        - page detail voiture:
+            - ajoute filtre par date , et les info depend de ce date :  
+                . aeroport depart a une date donner (a ce date filtrer)
+                . les reservation porter par ce voiture a une date donner (a ce date filtrer)
+                . heure depart sur aeroport et heure de retour sur l aeroport (a ce date filtrer)
+            
 
-Preparation des script 
-Page : insertion date-> liste trajet avec les info: les reservation
