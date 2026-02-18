@@ -10,6 +10,7 @@ Sprint 3:
         reservation : add idAeroport
         aeroport : id , nom , idlieu
         gestionVoiture : id , idVoiture , idReservation , date 
+        hotel : add lieu 
 
         NB : Ajoute une script d'initiation des tables pour vider les tables  
 
