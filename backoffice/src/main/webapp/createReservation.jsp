@@ -78,7 +78,7 @@
                 for (Hotel hotel : hotels) {
         %>
             <option value="<%= hotel.getId() %>">
-                <%= hotel.getNom() %>
+                <%= hotel.getLibelle() %>
             </option>
         <%
                 }
