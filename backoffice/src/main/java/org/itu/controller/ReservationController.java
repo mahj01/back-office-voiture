@@ -17,6 +17,8 @@ import com.itu.PostMapping;
 import com.itu.RequestParam;
 import com.itu.UrlAnnotation;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @ControllerAnnotation(url="reservation")
 public class ReservationController {
 
@@ -29,7 +31,10 @@ public class ReservationController {
     @JsonAnnotation
     @GetMapping
     @UrlAnnotation(url = "/liste")
-    public Object ListeReservation(@RequestParam("token") String token) {
+    public Object ListeReservation(HttpServletRequest request) {
+        // Extract token from header
+        String token = request.getHeader("X-Request-Token");
+
         // Validate token before returning data
         if (!TokenHandler.isTokenValid(token)) {
             return new ErrorResponse(false, "Invalid or missing token");
@@ -47,7 +52,10 @@ public class ReservationController {
     @JsonAnnotation
     @GetMapping
     @UrlAnnotation(url = "/liste/{dateArriver}")
-    public Object FilteByDate(@RequestParam("dateArriver") String dateArriverStr, @RequestParam("token") String token) {
+    public Object FilteByDate(@RequestParam("dateArriver") String dateArriverStr, HttpServletRequest request) {
+        // Extract token from header
+        String token = request.getHeader("X-Request-Token");
+
         // Validate token before returning data
         if (!TokenHandler.isTokenValid(token)) {
             return new ErrorResponse(false, "Invalid or missing token");
