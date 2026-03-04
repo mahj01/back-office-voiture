@@ -84,7 +84,7 @@ button:hover {
 <form method="post" action="delete">
     <input type="hidden" name="id" value="<%= id %>">
     <button type="submit">Oui, supprimer</button>
-    <a href="voitureList.jsp">Annuler</a>
+    <a href="liste">Annuler</a>
 </form>
 </body>
 </html>

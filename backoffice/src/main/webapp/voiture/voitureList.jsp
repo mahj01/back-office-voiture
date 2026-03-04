@@ -79,7 +79,7 @@ button:hover {
 </head>
 <body>
 <h2>Liste des voitures</h2>
-<p><a href="createVoiture.jsp">Créer une nouvelle voiture</a></p>
+<p><a href="saisie">Créer une nouvelle voiture</a></p>
 <table>
     <thead>
     <tr>
@@ -107,9 +107,12 @@ button:hover {
         <td><%= v.getNombrePlaces() %></td>
         <td><%= v.getTypeCarburant() %></td>
         <td>
-            <a href="viewVoiture.jsp?id=<%= v.getId() %>">Voir</a> |
-            <a href="editVoiture.jsp?id=<%= v.getId() %>">Modifier</a> |
-            <a href="deleteVoiture.jsp?id=<%= v.getId() %>">Supprimer</a>
+            <a href="view/<%= v.getId() %>">Voir</a> |
+            <a href="edit/<%= v.getId() %>">Modifier</a> |
+            <a href="delete/<%= v.getId() %>" 
+                onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet élément ?');">
+                delete
+            </a>
         </td>
     </tr>
     <%      }

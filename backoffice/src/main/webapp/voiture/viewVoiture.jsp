@@ -91,6 +91,6 @@ button:hover {
 <% } else { %>
     <p>Aucune donnée disponible pour la voiture (id=<%= id %>).</p>
 <% } %>
-<p><a href="voitureList.jsp">Retour à la liste</a></p>
+<p><a href="liste">Retour à la liste</a></p>
 </body>
 </html>

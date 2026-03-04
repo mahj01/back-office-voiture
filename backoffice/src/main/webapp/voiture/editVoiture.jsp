@@ -96,6 +96,6 @@ button:hover {
     <label>Type carburant: <input type="text" name="typeCarburant" value="<%= (v!=null?v.getTypeCarburant():request.getParameter("typeCarburant")) %>" required></label><br>
     <button type="submit">Mettre à jour</button>
 </form>
-<p><a href="voitureList.jsp">Retour à la liste</a></p>
+<p><a href="liste">Retour à la liste</a></p>
 </body>
 </html>
