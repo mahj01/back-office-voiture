@@ -32,7 +32,8 @@ psql -U app_dev -d voiture_reservation;
 
 CREATE TABLE hotel(
     id SERIAL PRIMARY KEY,
-    nom VARCHAR(255) NOT NULL
+    code VARCHAR(255) NOT NULL,
+    libelle VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE reservation (
@@ -51,10 +52,10 @@ CREATE TABLE prod.reservation (LIKE dev.reservation INCLUDING ALL);
 
 -- psql -U app_dev -d voiture_reservation -h localhost
 
-insert into hotel (nom) values ('Colbert');
-insert into hotel (nom) values ('Novotel');
-insert into hotel (nom) values ('Ibis');
-insert into hotel (nom) values ('Lokanga');
+insert into hotel (code,libelle) values ('COL','Colbert');
+insert into hotel (code,libelle) values ('NOV','Novotel');
+insert into hotel (code,libelle) values ('IBS','Ibis');
+insert into hotel (code,libelle) values ('LOK','Lokanga');
 
 delete from hotel;
 delete from reservation;
