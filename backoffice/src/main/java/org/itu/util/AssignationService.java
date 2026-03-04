@@ -144,7 +144,7 @@ public class AssignationService {
         int ecartMin = Integer.MAX_VALUE;
         for (Voiture v : voituresCompatibles) {
             int ecart = v.getNombrePlaces() - nombrePassagers;
-            if (ecart < ecartMin) {
+            if (ecart < ecartMin && ecart >= 0) {
                 ecartMin = ecart;
             }
         }
