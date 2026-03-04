@@ -68,6 +68,9 @@
                     <th><i class="bi bi-hash"></i> Places</th>
                     <th><i class="bi bi-fuel-pump"></i> Carburant</th>
                     <th><i class="bi bi-plus-slash-minus"></i> Écart</th>
+                    <th><i class="bi bi-signpost-split"></i> Itinéraire</th>
+                    <th><i class="bi bi-speedometer2"></i> Distance</th>
+                    <th><i class="bi bi-clock-history"></i> Retour Aéroport</th>
                     <th><i class="bi bi-check-circle"></i> Statut</th>
                 </tr>
             </thead>
@@ -75,48 +78,87 @@
     <%
         int index = 1;
         for (AssignationVoiture assignation : assignations) {
-            Reservation r = assignation.getReservation();
+            java.util.List<Reservation> groupReservations = assignation.getReservations();
             Voiture v = assignation.getVoiture();
-            Lieu l = r.getLieu();
+            int groupSize = groupReservations.size();
+            boolean isGrouped = assignation.isGrouped();
+            
+            for (int i = 0; i < groupSize; i++) {
+                Reservation r = groupReservations.get(i);
+                Lieu l = r.getLieu();
     %>
-            <tr>
-                <td><%= index++ %></td>
+            <tr<%= isGrouped ? " class=\"table-info\"" : "" %>>
+                <% if (i == 0) { %><td rowspan="<%= groupSize %>"><%= index++ %></td><% } %>
                 <td>Client #<%= r.getIdClient() %></td>
                 <td><strong><%= r.getNombrePassager() %></strong></td>
                 <td><%= l != null ? l.getLibelle() : "N/A" %></td>
                 <td><%= r.getDateArriver() != null ? r.getDateArriver().substring(11, 16) : "N/A" %></td>
                 
-                <% if (v != null) { %>
-                    <td><%= v.getMarque() %> <%= v.getModele() %></td>
-                    <td><strong><%= v.getMatricule() %></strong></td>
-                    <td><%= v.getNombrePlaces() %></td>
-                    <td>
-                        <% if ("D".equals(v.getTypeCarburant())) { %>
-                            <span class="text-success fw-bold">
-                                <i class="bi bi-droplet-fill"></i> Diesel
-                            </span>
-                        <% } else if ("G".equals(v.getTypeCarburant())) { %>
-                            <span class="text-warning fw-bold">
-                                <i class="bi bi-droplet-half"></i> Gasoil
-                            </span>
-                        <% } else if ("E".equals(v.getTypeCarburant())) { %>
-                            <span class="text-info fw-bold">
-                                <i class="bi bi-fuel-pump"></i> Essence
-                            </span>
-                        <% } else { %>
-                            <%= v.getTypeCarburant() %>
-                        <% } %>
-                    </td>
-                    <td><span class="badge bg-secondary">+<%= assignation.getEcartPlaces() %></span></td>
-                    <td><span class="badge bg-success"><i class="bi bi-check-lg"></i> Assigné</span></td>
-                <% } else { %>
-                    <td colspan="5" class="text-danger fw-bold">
-                        <i class="bi bi-x-circle"></i> Aucune voiture disponible
-                    </td>
-                    <td><span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non assigné</span></td>
+                <% if (i == 0) { %>
+                    <% if (v != null) { %>
+                        <td rowspan="<%= groupSize %>"><%= v.getMarque() %> <%= v.getModele() %></td>
+                        <td rowspan="<%= groupSize %>"><strong><%= v.getMatricule() %></strong></td>
+                        <td rowspan="<%= groupSize %>"><%= v.getNombrePlaces() %></td>
+                        <td rowspan="<%= groupSize %>">
+                            <% if ("D".equals(v.getTypeCarburant())) { %>
+                                <span class="text-success fw-bold">
+                                    <i class="bi bi-droplet-fill"></i> Diesel
+                                </span>
+                            <% } else if ("G".equals(v.getTypeCarburant())) { %>
+                                <span class="text-warning fw-bold">
+                                    <i class="bi bi-droplet-half"></i> Gasoil
+                                </span>
+                            <% } else if ("E".equals(v.getTypeCarburant())) { %>
+                                <span class="text-info fw-bold">
+                                    <i class="bi bi-fuel-pump"></i> Essence
+                                </span>
+                            <% } else { %>
+                                <%= v.getTypeCarburant() %>
+                            <% } %>
+                        </td>
+                        <td rowspan="<%= groupSize %>"><span class="badge bg-secondary">+<%= assignation.getEcartPlaces() %></span></td>
+                        <td rowspan="<%= groupSize %>">
+                            <% if (assignation.getItineraire() != null && !assignation.getItineraire().isEmpty()) { %>
+                                <small><%= assignation.getItineraireStr() %></small>
+                            <% } else { %>
+                                <span class="text-muted">N/A</span>
+                            <% } %>
+                        </td>
+                        <td rowspan="<%= groupSize %>">
+                            <% if (assignation.getDistanceTotaleKm() > 0) { %>
+                                <span class="badge bg-primary"><%= assignation.getDistanceTotaleKm() %> km</span>
+                            <% } else { %>
+                                <span class="text-muted">N/A</span>
+                            <% } %>
+                        </td>
+                        <td rowspan="<%= groupSize %>">
+                            <% if (assignation.getHeureRetourAeroport() != null) { %>
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> <%= assignation.getHeureRetourAeroport() %></span>
+                            <% } else { %>
+                                <span class="text-muted">N/A</span>
+                            <% } %>
+                        </td>
+                        <td rowspan="<%= groupSize %>">
+                            <span class="badge bg-success"><i class="bi bi-check-lg"></i> Assigné</span>
+                            <% if (isGrouped) { %>
+                                <br><span class="badge bg-info mt-1"><i class="bi bi-people-fill"></i> Groupe (<%= assignation.getTotalPassagers() %> pass.)</span>
+                                <br><small class="text-muted"><i class="bi bi-geo-alt-fill"></i> Lieux:
+                                <% for (int li = 0; li < assignation.getLieux().size(); li++) { %>
+                                    <%= assignation.getLieux().get(li).getLibelle() %><%= li < assignation.getLieux().size() - 1 ? ", " : "" %>
+                                <% } %>
+                                </small>
+                            <% } %>
+                        </td>
+                    <% } else { %>
+                        <td rowspan="<%= groupSize %>" colspan="8" class="text-danger fw-bold">
+                            <i class="bi bi-x-circle"></i> Aucune voiture disponible
+                        </td>
+                        <td rowspan="<%= groupSize %>"><span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non assigné</span></td>
+                    <% } %>
                 <% } %>
             </tr>
     <%
+            }
         }
     %>
             </tbody>
