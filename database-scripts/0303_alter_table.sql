@@ -1,21 +1,46 @@
-create table parametre(
-    id int auto_increment primary key,
-    libelle varchar(255) not null,
-    valeur varchar(255) not null
+-- ================================
+-- 1) TABLE parametre
+-- ================================
+
+CREATE TABLE parametre (
+    id SERIAL PRIMARY KEY,
+    libelle VARCHAR(255) NOT NULL,
+    valeur VARCHAR(255) NOT NULL
 );
 
-rename table hotel to lieu;
+-- ================================
+-- 2) RENOMMER hotel EN lieu
+-- ================================
 
-alter table lieu drop column nom;
-alter table lieu add column code varchar(255) not null;
-alter table lieu add column libelle varchar(255) not null;
-alter table lieu add column type_lieu varchar(255) not null;
+ALTER TABLE hotel RENAME TO lieu;
 
-create table distance (
-    id int auto_increment primary key,
-    "from" int not null,
-    "to" int not null,
-    km double not null,
-    foreign key ("from") references lieu(id),
-    foreign key ("to") references lieu(id)
+-- ================================
+-- 3) MODIFICATION TABLE lieu
+-- ================================
+
+-- Supprimer colonne nom
+ALTER TABLE lieu DROP COLUMN nom;
+
+-- Ajouter nouvelles colonnes
+ALTER TABLE lieu ADD COLUMN code VARCHAR(255) NOT NULL;
+ALTER TABLE lieu ADD COLUMN libelle VARCHAR(255) NOT NULL;
+ALTER TABLE lieu ADD COLUMN type_lieu VARCHAR(255) NOT NULL;
+
+-- ================================
+-- 4) TABLE distance
+-- ================================
+
+CREATE TABLE distance (
+    id SERIAL PRIMARY KEY,
+    lieu_from INT NOT NULL,
+    lieu_to INT NOT NULL,
+    km DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_lieu_from
+        FOREIGN KEY (lieu_from)
+        REFERENCES lieu(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_lieu_to
+        FOREIGN KEY (lieu_to)
+        REFERENCES lieu(id)
+        ON DELETE CASCADE
 );
