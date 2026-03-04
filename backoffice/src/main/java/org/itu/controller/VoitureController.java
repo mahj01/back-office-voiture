@@ -27,7 +27,7 @@ public class VoitureController {
     @GetMapping
     @UrlAnnotation(url = "/")
     public void liste(HttpServletResponse response) throws IOException {
-        response.sendRedirect("liste");
+        response.sendRedirect("voiture/liste");
     }
     
     @GetMapping
