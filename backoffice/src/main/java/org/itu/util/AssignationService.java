@@ -261,10 +261,14 @@ public class AssignationService {
 
     /**
      * Assigne les voitures aux réservations pour une date donnée.
-     * Les réservations avec la même date et heure sont regroupées.
-     * Pour chaque groupe, on cherche une voiture pour la réservation avec le plus de passagers,
-     * puis on essaie d'y ajouter d'autres réservations du groupe si la capacité le permet.
-     * Les lieux de chaque groupe dans la même voiture sont suivis.
+     * Les réservations avec la même heure et minute sont regroupées dans la même voiture.
+     * Algorithme:
+     * 1. Regrouper les réservations par heure:minute
+     * 2. Trier les réservations par nombre décroissant de passagers
+     * 3. Trier les voitures par nombre décroissant de places
+     * 4. Prendre la réservation avec le max de passagers → voiture avec max de places
+     * 5. Remplir la voiture avec d'autres réservations du même créneau si possible
+     * 6. Si la voiture est pleine, répéter avec les réservations restantes
      */
     public List<AssignationVoiture> assignerVoitures(Date date) {
         List<AssignationVoiture> assignations = new ArrayList<>();
@@ -275,17 +279,17 @@ public class AssignationService {
         // Récupérer les réservations du jour
         List<Reservation> reservations = getReservationsByDate(date);
         
-        // Regrouper les réservations par date et heure exacte
+        // Regrouper les réservations par date, heure et minute exacte
         Map<String, List<Reservation>> groups = new LinkedHashMap<>();
         for (Reservation r : reservations) {
-            String key = getDateHourKey(r);
+            String key = getDateHourMinuteKey(r);
             groups.computeIfAbsent(key, k -> new ArrayList<>()).add(r);
         }
         
         // Traiter chaque groupe
         for (List<Reservation> group : groups.values()) {
             if (group.size() == 1) {
-                // Réservation unique - logique existante
+                // Réservation unique - logique existante (min écart, diesel, random)
                 Reservation reservation = group.get(0);
                 Voiture voitureAssignee = trouverMeilleureVoiture(reservation.getNombrePassager());
                 
@@ -296,30 +300,56 @@ public class AssignationService {
                     voituresDisponibles.removeIf(v -> v.getId() == voitureAssignee.getId());
                 }
             } else {
-                // Groupe de réservations à la même date et heure
-                // Calculer le total de passagers du groupe
-                int totalPassagers = 0;
-                for (Reservation r : group) {
-                    totalPassagers += r.getNombrePassager();
+                // Groupe de réservations à la même heure et minute
+                // Trier les réservations par nombre décroissant de passagers
+                group.sort((a, b) -> b.getNombrePassager() - a.getNombrePassager());
+                
+                // Trier les voitures disponibles par nombre décroissant de places
+                List<Voiture> voituresTriees = new ArrayList<>(voituresDisponibles);
+                voituresTriees.sort((a, b) -> b.getNombrePlaces() - a.getNombrePlaces());
+                
+                List<Reservation> remaining = new ArrayList<>(group);
+                
+                while (!remaining.isEmpty()) {
+                    // Prendre la première réservation (max passagers)
+                    Reservation mainReservation = remaining.get(0);
+                    
+                    // Trouver la voiture avec le max de places qui peut contenir au moins cette réservation
+                    Voiture bestVoiture = null;
+                  
+                    for (Voiture v : voituresTriees) {
+                        if (v.getNombrePlaces() >= mainReservation.getNombrePassager()) {
+                            bestVoiture = v;
+                            break;
+                        }
+                    }
+                    
+                    
+                    AssignationVoiture assignation = new AssignationVoiture(mainReservation, bestVoiture);
+                    remaining.remove(0);
+                    
+                    if (bestVoiture != null) {
+                        int capaciteRestante = bestVoiture.getNombrePlaces() - mainReservation.getNombrePassager();
+                        
+                        // Essayer de remplir la voiture avec d'autres réservations du groupe
+                        List<Reservation> fitted = new ArrayList<>();
+                        for (Reservation r : remaining) {
+                            if (r.getNombrePassager() <= capaciteRestante) {
+                                assignation.addReservation(r);
+                                capaciteRestante -= r.getNombrePassager();
+                                fitted.add(r);
+                            }
+                        }
+                        remaining.removeAll(fitted);
+                        
+                        // Retirer cette voiture de la liste des disponibles
+                        final int voitureId = bestVoiture.getId();
+                        voituresDisponibles.removeIf(v -> v.getId() == voitureId);
+                        voituresTriees.removeIf(v -> v.getId() == voitureId);
+                    }
+                    
+                    assignations.add(assignation);
                 }
-                
-                // Trouver la meilleure voiture pour le total du groupe
-                Voiture voiture = trouverMeilleureVoiture(totalPassagers);
-                
-                // Prendre la première réservation comme réservation principale
-                Reservation mainReservation = group.get(0);
-                AssignationVoiture assignation = new AssignationVoiture(mainReservation, voiture);
-                
-                // Ajouter les autres réservations du groupe
-                for (int i = 1; i < group.size(); i++) {
-                    assignation.addReservation(group.get(i));
-                }
-                
-                if (voiture != null) {
-                    voituresDisponibles.removeIf(v -> v.getId() == voiture.getId());
-                }
-                
-                assignations.add(assignation);
             }
         }
 
@@ -338,12 +368,12 @@ public class AssignationService {
     }
 
     /**
-     * Extrait la clé date+heure d'une réservation (format: "YYYY-MM-DD HH")
+     * Extrait la clé date+heure+minute d'une réservation (format: "YYYY-MM-DD HH:MM")
      */
-    private String getDateHourKey(Reservation r) {
+    private String getDateHourMinuteKey(Reservation r) {
         String dateStr = r.getDateArriver();
-        if (dateStr != null && dateStr.length() >= 13) {
-            return dateStr.substring(0, 13);
+        if (dateStr != null && dateStr.length() >= 16) {
+            return dateStr.substring(0, 16);
         }
         return dateStr != null ? dateStr : "";
     }

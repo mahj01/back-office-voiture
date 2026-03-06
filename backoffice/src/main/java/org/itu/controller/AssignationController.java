@@ -53,9 +53,15 @@ public class AssignationController {
             AssignationService service = new AssignationService(db);
             List<AssignationVoiture> assignations = service.assignerVoitures(date);
 
+            int totalReservations = 0;
+            for (AssignationVoiture a : assignations) {
+                totalReservations += a.getReservations().size();
+            }
+
             mv.addAttribute("assignations", assignations);
             mv.addAttribute("dateReservation", dateStr);
-            mv.addAttribute("nombreReservations", assignations.size());
+            mv.addAttribute("nombreReservations", totalReservations);
+            mv.addAttribute("nombreVoitures", assignations.size());
 
             return mv;
         } catch (Exception e) {
