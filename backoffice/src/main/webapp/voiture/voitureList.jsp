@@ -89,6 +89,8 @@ button:hover {
         <th>Modèle</th>
         <th>Nombre de places</th>
         <th>Type carburant</th>
+        <th>Vitesse moy. (km/h)</th>
+        <th>Temps attente (min)</th>
         <th>Actions</th>
     </tr>
     </thead>
@@ -106,6 +108,8 @@ button:hover {
         <td><%= v.getModele() %></td>
         <td><%= v.getNombrePlaces() %></td>
         <td><%= v.getTypeCarburant() %></td>
+        <td><%= v.getVitesseMoyenne() != null ? v.getVitesseMoyenne() : "" %></td>
+        <td><%= v.getTempAttente() != null ? v.getTempAttente() : "" %></td>
         <td>
             <a href="view/<%= v.getId() %>">Voir</a> |
             <a href="edit/<%= v.getId() %>">Modifier</a> |
@@ -117,7 +121,7 @@ button:hover {
     </tr>
     <%      }
         } else { %>
-    <tr><td colspan="7">Aucune voiture trouvée.</td></tr>
+    <tr><td colspan="9">Aucune voiture trouvée.</td></tr>
     <% } %>
     </tbody>
 </table>

@@ -4,9 +4,9 @@ import java.sql.Date;
 
 import org.itu.entity.Reservation;
 import org.itu.util.DB;
+import org.itu.util.ErrorResponse;
 import org.itu.util.FonctionReservation;
 import org.itu.util.TokenHandler;
-import org.itu.util.ErrorResponse;
 
 import com.itu.ControllerAnnotation;
 import com.itu.GetMapping;
@@ -82,6 +82,7 @@ public class ReservationController {
         try {
             FonctionReservation fc = new FonctionReservation(db);
             mv.addAttribute("lieux", fc.getAllLieux());
+            mv.addAttribute("aeroports", fc.getAllAeroports());
             return mv;
         } finally {
             db.disconnect();

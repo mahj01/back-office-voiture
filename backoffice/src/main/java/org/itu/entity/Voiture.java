@@ -1,5 +1,7 @@
 package org.itu.entity;
 
+import java.math.BigDecimal;
+
 import org.itu.util.DB;
 
 public class Voiture {
@@ -9,6 +11,10 @@ public class Voiture {
     private String modele;
     private int nombrePlaces;
     private String typeCarburant;
+    private BigDecimal vitesseMoyenne;
+    private BigDecimal tempAttente;
+
+    
 
     private DB db;
 
@@ -53,6 +59,18 @@ public class Voiture {
     public void setTypeCarburant(String typeCarburant) {
         this.typeCarburant = typeCarburant;
     }
+    public BigDecimal getVitesseMoyenne() {
+        return vitesseMoyenne;
+    }
+    public void setVitesseMoyenne(BigDecimal vitesseMoyenne) {
+        this.vitesseMoyenne = vitesseMoyenne;
+    }
+    public BigDecimal getTempAttente() {
+        return tempAttente;
+    }
+    public void setTempAttente(BigDecimal tempAttente) {
+        this.tempAttente = tempAttente;
+    }
     public Voiture(int id, String matricule, String marque, String modele, int nombrePlaces, String typeCarburant) {
         this.id = id;
         this.matricule = matricule;
@@ -60,6 +78,16 @@ public class Voiture {
         this.modele = modele;
         this.nombrePlaces = nombrePlaces;
         this.typeCarburant = typeCarburant;
+    }
+    public Voiture(int id, String matricule, String marque, String modele, int nombrePlaces, String typeCarburant, BigDecimal vitesseMoyenne, BigDecimal tempAttente) {
+        this.id = id;
+        this.matricule = matricule;
+        this.marque = marque;
+        this.modele = modele;
+        this.nombrePlaces = nombrePlaces;
+        this.typeCarburant = typeCarburant;
+        this.vitesseMoyenne = vitesseMoyenne;
+        this.tempAttente = tempAttente;
     }
 
     public void delete() {
@@ -74,13 +102,15 @@ public class Voiture {
     }
 
     public void createVoiture() {
-        String sql = "INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setString(1, this.matricule);
             stmt.setString(2, this.marque);
             stmt.setString(3, this.modele);
             stmt.setInt(4, this.nombrePlaces);
             stmt.setString(5, this.typeCarburant);
+            stmt.setBigDecimal(6, this.vitesseMoyenne);
+            stmt.setBigDecimal(7, this.tempAttente);
             stmt.executeUpdate();
             System.out.println("Voiture créée avec succès.");
         } catch (java.sql.SQLException e) {
@@ -89,14 +119,16 @@ public class Voiture {
     }
 
     public void updateVoiture() {
-        String sql = "UPDATE voiture SET matricule = ?, marque = ?, model = ?, nombre_place = ?, type_carburant = ? WHERE id = ?";
+        String sql = "UPDATE voiture SET matricule = ?, marque = ?, model = ?, nombre_place = ?, type_carburant = ?, vitesse_moyenne = ?, temp_attente = ? WHERE id = ?";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setString(1, this.matricule);
             stmt.setString(2, this.marque);
             stmt.setString(3, this.modele);
             stmt.setInt(4, this.nombrePlaces);
             stmt.setString(5, this.typeCarburant);
-            stmt.setInt(6, this.id);
+            stmt.setBigDecimal(6, this.vitesseMoyenne);
+            stmt.setBigDecimal(7, this.tempAttente);
+            stmt.setInt(8, this.id);
             stmt.executeUpdate();
             System.out.println("Voiture mise à jour avec succès.");
         } catch (java.sql.SQLException e) {

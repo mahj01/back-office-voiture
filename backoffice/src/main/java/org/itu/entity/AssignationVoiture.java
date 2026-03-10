@@ -13,13 +13,18 @@ public class AssignationVoiture {
     private List<Reservation> reservations; // toutes les réservations assignées à cette voiture
     private List<Lieu> lieux; // tous les lieux du groupe
     private List<Lieu> itineraire; // itinéraire ordonné (aéroport -> hotels -> aéroport)
-    private double distanceTotaleKm; // distance totale du trajet en km
+    private List<Double> distancesParEtape; // distance de chaque tronçon (index i = step[i]→step[i+1])
+    private double distanceTotaleKm; // distance totale aller-retour en km
     private String heureRetourAeroport; // heure estimée de retour à l'aéroport
+    private double vitesseKmH;       // vitesse utilisée pour le calcul (km/h)
+    private double tempAttenteMin;   // temps d'attente par arrêt intermédiaire (min)
+    private long tempsTrajetMinutes; // durée totale du trajet (conduite + attente) en min
 
     public AssignationVoiture() {
         this.reservations = new ArrayList<>();
         this.lieux = new ArrayList<>();
         this.itineraire = new ArrayList<>();
+        this.distancesParEtape = new ArrayList<>();
     }
 
     public AssignationVoiture(Reservation reservation, Voiture voiture) {
@@ -128,6 +133,38 @@ public class AssignationVoiture {
 
     public void setHeureRetourAeroport(String heureRetourAeroport) {
         this.heureRetourAeroport = heureRetourAeroport;
+    }
+
+    public List<Double> getDistancesParEtape() {
+        return distancesParEtape;
+    }
+
+    public void setDistancesParEtape(List<Double> distancesParEtape) {
+        this.distancesParEtape = distancesParEtape;
+    }
+
+    public double getVitesseKmH() {
+        return vitesseKmH;
+    }
+
+    public void setVitesseKmH(double vitesseKmH) {
+        this.vitesseKmH = vitesseKmH;
+    }
+
+    public double getTempAttenteMin() {
+        return tempAttenteMin;
+    }
+
+    public void setTempAttenteMin(double tempAttenteMin) {
+        this.tempAttenteMin = tempAttenteMin;
+    }
+
+    public long getTempsTrajetMinutes() {
+        return tempsTrajetMinutes;
+    }
+
+    public void setTempsTrajetMinutes(long tempsTrajetMinutes) {
+        this.tempsTrajetMinutes = tempsTrajetMinutes;
     }
 
     /**

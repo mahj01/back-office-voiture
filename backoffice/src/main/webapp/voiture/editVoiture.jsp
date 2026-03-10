@@ -87,13 +87,15 @@ button:hover {
         try { v.setId(Integer.parseInt(sid)); } catch(Exception e) {}
     }
 %>
-<form method="post" action="/update">
+<form method="post" action="update">
     <input type="hidden" name="id" value="<%= (v!=null?v.getId(): (request.getParameter("id")!=null?request.getParameter("id"):"")) %>">
     <label>Matricule: <input type="text" name="matricule" value="<%= (v!=null?v.getMatricule():request.getParameter("matricule")) %>" required></label><br>
     <label>Marque: <input type="text" name="marque" value="<%= (v!=null?v.getMarque():request.getParameter("marque")) %>" required></label><br>
     <label>Modèle: <input type="text" name="modele" value="<%= (v!=null?v.getModele():request.getParameter("modele")) %>" required></label><br>
     <label>Nombre de places: <input type="number" name="nombrePlaces" min="1" value="<%= (v!=null?v.getNombrePlaces(): (request.getParameter("nombrePlaces")!=null?Integer.parseInt(request.getParameter("nombrePlaces")):1)) %>" required></label><br>
     <label>Type carburant: <input type="text" name="typeCarburant" value="<%= (v!=null?v.getTypeCarburant():request.getParameter("typeCarburant")) %>" required></label><br>
+    <label>Vitesse moyenne (km/h): <input type="number" step="0.01" min="0" name="vitesseMoyenne" value="<%= (v!=null && v.getVitesseMoyenne()!=null ? v.getVitesseMoyenne() : "") %>"></label><br>
+    <label>Temps d'attente (min): <input type="number" step="0.01" min="0" name="tempAttente" value="<%= (v!=null && v.getTempAttente()!=null ? v.getTempAttente() : "") %>"></label><br>
     <button type="submit">Mettre à jour</button>
 </form>
 <p><a href="liste">Retour à la liste</a></p>

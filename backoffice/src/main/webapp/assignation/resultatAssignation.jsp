@@ -70,6 +70,14 @@
                 <% } else { %>
                     &mdash; <em>Aucune voiture disponible</em>
                 <% } %>
+                <%
+                    Reservation mainRes = assignation.getReservation();
+                    if (mainRes != null && mainRes.getLieuAtterissage() != null) {
+                %>
+                    <span class="badge bg-warning text-dark ms-2">
+                        <i class="bi bi-airplane-fill"></i> <%= mainRes.getLieuAtterissage().getLibelle() %>
+                    </span>
+                <% } %>
             </div>
             <div>
                 <% if (hasVoiture) { %>
@@ -132,28 +140,38 @@
             </div>
 
             <% if (hasVoiture) { %>
-            <!-- Itinéraire / Trajet -->
+            <!-- Itinéraire / Trajet aller-retour -->
             <div class="row">
-                <div class="col-md-8">
-                    <h6><i class="bi bi-signpost-split-fill text-success"></i> Itinéraire (trajet aller-retour)</h6>
+                <div class="col-12 mb-3">
+                    <h6><i class="bi bi-signpost-split-fill text-success"></i> Itinéraire aller-retour
+                        <small class="text-muted fw-normal">(Aéroport &rarr; dépôt passagers &rarr; Aéroport)</small>
+                    </h6>
                     <% if (assignation.getItineraire() != null && !assignation.getItineraire().isEmpty()) { %>
-                        <div class="p-2 bg-light rounded mb-2">
+                        <div class="p-2 bg-light rounded mb-2 d-flex flex-wrap align-items-center gap-1">
                         <%
                             List<Lieu> itineraire = assignation.getItineraire();
+                            java.util.List<Double> distEtapes = assignation.getDistancesParEtape();
                             for (int i = 0; i < itineraire.size(); i++) {
                                 Lieu step = itineraire.get(i);
                                 boolean isFirst = (i == 0);
-                                boolean isLast = (i == itineraire.size() - 1);
+                                boolean isLast  = (i == itineraire.size() - 1);
                         %>
                             <span class="itineraire-step">
                                 <% if (isFirst || isLast) { %>
-                                    <span class="badge bg-danger"><i class="bi bi-airplane"></i> <%= step.getLibelle() %></span>
+                                    <span class="badge bg-danger px-2 py-1"><i class="bi bi-airplane"></i> <%= step.getLibelle() %></span>
                                 <% } else { %>
-                                    <span class="badge bg-primary"><i class="bi bi-building"></i> <%= step.getLibelle() %></span>
+                                    <span class="badge bg-primary px-2 py-1"><i class="bi bi-building"></i> <%= step.getLibelle() %></span>
                                 <% } %>
                             </span>
-                            <% if (!isLast) { %>
-                                <span class="itineraire-arrow"><i class="bi bi-arrow-right"></i></span>
+                            <% if (!isLast) {
+                                Double distEtape = (distEtapes != null && i < distEtapes.size()) ? distEtapes.get(i) : null;
+                            %>
+                                <span class="itineraire-arrow d-inline-flex align-items-center">
+                                    <% if (distEtape != null) { %>
+                                        <span class="small text-muted mx-1"><%= distEtape %> km</span>
+                                    <% } %>
+                                    <i class="bi bi-arrow-right"></i>
+                                </span>
                             <% } %>
                         <%
                             }
@@ -163,26 +181,56 @@
                         <span class="text-muted">Itinéraire non disponible</span>
                     <% } %>
                 </div>
-                <div class="col-md-4">
-                    <h6><i class="bi bi-speedometer2 text-warning"></i> Résumé trajet</h6>
-                    <ul class="list-unstyled mb-0">
-                        <li>
-                            <i class="bi bi-rulers"></i> Distance totale :
-                            <% if (assignation.getDistanceTotaleKm() > 0) { %>
-                                <span class="badge bg-primary"><%= assignation.getDistanceTotaleKm() %> km</span>
-                            <% } else { %>
-                                <span class="text-muted">N/A</span>
-                            <% } %>
-                        </li>
-                        <li class="mt-1">
-                            <i class="bi bi-clock-history"></i> Retour aéroport :
-                            <% if (assignation.getHeureRetourAeroport() != null) { %>
-                                <span class="badge bg-warning text-dark"><%= assignation.getHeureRetourAeroport() %></span>
-                            <% } else { %>
-                                <span class="text-muted">N/A</span>
-                            <% } %>
-                        </li>
-                    </ul>
+                <!-- 4 cartes métriques -->
+                <div class="col-12">
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <div class="card text-center p-2 border-primary h-100">
+                                <div class="small text-muted"><i class="bi bi-rulers"></i> Distance totale</div>
+                                <div class="fw-bold text-primary fs-5">
+                                    <% if (assignation.getDistanceTotaleKm() > 0) { %>
+                                        <%= assignation.getDistanceTotaleKm() %> km
+                                    <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
+                                </div>
+                                <div class="small text-muted">aller-retour</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card text-center p-2 border-info h-100">
+                                <div class="small text-muted"><i class="bi bi-speedometer2"></i> Vitesse moy.</div>
+                                <div class="fw-bold text-info fs-5">
+                                    <% if (assignation.getVitesseKmH() > 0) { %>
+                                        <%= assignation.getVitesseKmH() %> km/h
+                                    <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card text-center p-2 border-secondary h-100">
+                                <div class="small text-muted"><i class="bi bi-hourglass-split"></i> Durée trajet</div>
+                                <div class="fw-bold fs-5">
+                                    <% if (assignation.getTempsTrajetMinutes() > 0) {
+                                        long hh = assignation.getTempsTrajetMinutes() / 60;
+                                        long mm = assignation.getTempsTrajetMinutes() % 60;
+                                    %>
+                                        <%= hh > 0 ? hh + "h " : "" %><%= mm %>min
+                                    <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
+                                </div>
+                                <div class="small text-muted">durée de conduite</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card text-center p-2 border-warning h-100">
+                                <div class="small text-muted"><i class="bi bi-clock-history"></i> Retour aéroport</div>
+                                <div class="fw-bold text-warning-emphasis fs-5">
+                                    <% if (assignation.getHeureRetourAeroport() != null) { %>
+                                        <%= assignation.getHeureRetourAeroport() %>
+                                    <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
+                                </div>
+                                <div class="small text-muted">heure estimée</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <% } %>

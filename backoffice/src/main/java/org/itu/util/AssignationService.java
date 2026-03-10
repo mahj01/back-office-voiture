@@ -63,7 +63,7 @@ public class AssignationService {
     public Lieu getAeroport() {
         String sql = "SELECT l.id, l.code, l.libelle, l.type_lieu FROM lieu l " +
                      "JOIN type_lieu tl ON CAST(l.type_lieu AS INTEGER) = tl.id " +
-                     "WHERE tl.libelle = 'AEROPORT' LIMIT 1";
+                     "WHERE tl.libelle = 'AEROPORT' ORDER BY l.id ASC LIMIT 1";
         try (java.sql.Statement stmt = db.getConnection().createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
@@ -106,15 +106,28 @@ public class AssignationService {
     }
 
     /**
-     * Calcule l'itinéraire optimal (plus proche voisin) et l'heure de retour à l'aéroport
-     * Trajet: Aéroport -> hotel le plus proche -> hotel le plus proche suivant -> ... -> Aéroport
+     * Calcule l'itinéraire optimal (plus proche voisin) et l'heure de retour à l'aéroport.
+     * Trajet: Aéroport → hotel le plus proche → ... → Aéroport (aller-retour complet).
+     *
+     * Vitesse utilisée : voiture.vitesseMoyenne en priorité, sinon defaultVitesseKmH (table parametre).
+     * Temps total = (distanceTotale / vitesse × 60) + (nbArrêts × tempAttente de la voiture).
      */
-    private void computeItineraire(AssignationVoiture assignation, Lieu aeroport, List<Distance> distances, double vitesseKmH) {
+    private void computeItineraire(AssignationVoiture assignation, Lieu aeroport, List<Distance> distances, double defaultVitesseKmH) {
         if (aeroport == null || assignation.getLieux() == null || assignation.getLieux().isEmpty()) {
             return;
         }
 
-        // Collecter les hotels uniques à visiter (éviter les doublons par id)
+        // --- Vitesse : voiture.vitesseMoyenne > table parametre > 30 km/h ---
+        double vitesseKmH = defaultVitesseKmH;
+        Voiture voiture = assignation.getVoiture();
+        if (voiture != null && voiture.getVitesseMoyenne() != null
+                && voiture.getVitesseMoyenne().doubleValue() > 0) {
+            vitesseKmH = voiture.getVitesseMoyenne().doubleValue();
+        }
+
+        assignation.setVitesseKmH(vitesseKmH);
+
+        // --- Collecter les lieux uniques à visiter (hors aéroport) ---
         List<Lieu> hotelsToVisit = new ArrayList<>();
         List<Integer> seenIds = new ArrayList<>();
         for (Lieu l : assignation.getLieux()) {
@@ -128,8 +141,9 @@ public class AssignationService {
             return;
         }
 
-        // Algorithme du plus proche voisin
+        // --- Algorithme du plus proche voisin ---
         List<Lieu> itineraire = new ArrayList<>();
+        List<Double> distancesParEtape = new ArrayList<>();
         itineraire.add(aeroport);
         double totalKm = 0;
         int currentId = aeroport.getId();
@@ -143,8 +157,8 @@ public class AssignationService {
                 Lieu hotel = hotelsToVisit.get(i);
                 Double dist = findDistance(distances, currentId, hotel.getId());
                 if (dist != null) {
-                    if (dist < minDist || 
-                        (dist == minDist && closest != null && 
+                    if (dist < minDist ||
+                        (dist == minDist && closest != null &&
                          hotel.getLibelle().compareToIgnoreCase(closest.getLibelle()) < 0)) {
                         minDist = dist;
                         closest = hotel;
@@ -154,41 +168,50 @@ public class AssignationService {
             }
 
             if (closest == null) {
-                // Pas de distance trouvée, on ajoute les restants sans distance
+                // Pas de distance connue : ajouter les restants sans distance
                 for (Lieu remaining : hotelsToVisit) {
                     itineraire.add(remaining);
+                    distancesParEtape.add(null);
                 }
                 hotelsToVisit.clear();
                 break;
             }
 
             itineraire.add(closest);
+            distancesParEtape.add(minDist);
             totalKm += minDist;
             currentId = closest.getId();
             hotelsToVisit.remove(closestIndex);
         }
 
-        // Retour à l'aéroport
+        // --- Retour à l'aéroport ---
         Double retourDist = findDistance(distances, currentId, aeroport.getId());
         if (retourDist != null) {
             totalKm += retourDist;
         }
+        distancesParEtape.add(retourDist); // dernier tronçon : dernier hotel → aéroport
         itineraire.add(aeroport);
 
         assignation.setItineraire(itineraire);
+        assignation.setDistancesParEtape(distancesParEtape);
         assignation.setDistanceTotaleKm(Math.round(totalKm * 100.0) / 100.0);
 
-        // Calculer l'heure de retour: heure départ + temps de trajet
-        // temps = distance / vitesse
+        // --- Calcul du temps de trajet (conduite seule) ---
+        double tempsConduiteMin = (vitesseKmH > 0) ? (totalKm / vitesseKmH * 60.0) : 0;
+        assignation.setTempsTrajetMinutes(Math.round(tempsConduiteMin));
+
+        System.out.printf("[Itinéraire] Voiture %s | %.2f km | %.0f km/h | %.0f min%n",
+            voiture != null ? voiture.getMatricule() : "?",
+            totalKm, vitesseKmH, tempsConduiteMin);
+
+        // --- Heure de retour = heure de départ + temps de conduite ---
         if (vitesseKmH > 0 && assignation.getReservation() != null) {
             String dateStr = assignation.getReservation().getDateArriver();
             if (dateStr != null) {
                 try {
                     java.sql.Timestamp depart = java.sql.Timestamp.valueOf(dateStr);
-                    double heures = totalKm / vitesseKmH;
-                    long millis = (long) (heures * 3600 * 1000);
+                    long millis = (long) (tempsConduiteMin * 60 * 1000);
                     java.sql.Timestamp retour = new java.sql.Timestamp(depart.getTime() + millis);
-                    // Format HH:mm
                     assignation.setHeureRetourAeroport(retour.toString().substring(11, 16));
                 } catch (Exception e) {
                     System.out.println("Erreur calcul heure retour: " + e.getMessage());
@@ -202,7 +225,7 @@ public class AssignationService {
      */
     public List<Voiture> getAllVoitures() {
         List<Voiture> voitures = new ArrayList<>();
-        String sql = "SELECT * FROM voiture ORDER BY nombre_place, type_carburant";
+        String sql = "SELECT id, matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente FROM voiture ORDER BY nombre_place, type_carburant";
         try (java.sql.Statement stmt = db.getConnection().createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -212,7 +235,9 @@ public class AssignationService {
                     rs.getString("marque"),
                     rs.getString("model"),
                     rs.getInt("nombre_place"),
-                    rs.getString("type_carburant")
+                    rs.getString("type_carburant"),
+                    rs.getBigDecimal("vitesse_moyenne"),
+                    rs.getBigDecimal("temp_attente")
                 );
                 voitures.add(v);
             }
@@ -227,9 +252,11 @@ public class AssignationService {
      */
     public List<Reservation> getReservationsByDate(Date date) {
         List<Reservation> reservations = new ArrayList<>();
-        String sql = "SELECT r.*, l.id as lieu_id, l.code, l.libelle, l.type_lieu " +
+        String sql = "SELECT r.*, l.id as lieu_id, l.code, l.libelle, l.type_lieu, " +
+                     "la.id as aero_id, la.code as aero_code, la.libelle as aero_libelle, la.type_lieu as aero_type " +
                      "FROM reservation r " +
                      "JOIN lieu l ON r.idlieu = l.id " +
+                     "LEFT JOIN lieu la ON r.idlieuatterissage = la.id " +
                      "WHERE DATE(r.datearrivee) = ? " +
                      "ORDER BY r.datearrivee";
         try (PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
@@ -242,12 +269,18 @@ public class AssignationService {
                         rs.getString("libelle"),
                         rs.getString("type_lieu")
                     );
+                    Lieu aero = null;
+                    if (rs.getObject("aero_id") != null) {
+                        aero = new Lieu(rs.getInt("aero_id"), rs.getString("aero_code"),
+                                        rs.getString("aero_libelle"), rs.getString("aero_type"));
+                    }
                     Reservation r = new Reservation(
                         rs.getInt("id"),
                         rs.getInt("idclient"),
                         rs.getTimestamp("datearrivee"),
                         rs.getInt("nombrepassagers"),
-                        lieu
+                        lieu,
+                        aero
                     );
                     reservations.add(r);
                 }
@@ -354,13 +387,18 @@ public class AssignationService {
         }
 
         // Calculer l'itinéraire et l'heure de retour pour chaque assignation
-        Lieu aeroport = getAeroport();
+        Lieu aeroportGlobal = getAeroport(); // fallback si pas de lieu_atterissage sur la réservation
         List<Distance> allDistances = getAllDistances();
         double vitesse = getVitesseKmH();
 
         for (AssignationVoiture assignation : assignations) {
             if (assignation.hasVoiture()) {
-                computeItineraire(assignation, aeroport, allDistances, vitesse);
+                // Utiliser l'aéroport spécifique de la réservation principale du groupe
+                Lieu aeroportLocal = (assignation.getReservation() != null
+                        && assignation.getReservation().getLieuAtterissage() != null)
+                        ? assignation.getReservation().getLieuAtterissage()
+                        : aeroportGlobal;
+                computeItineraire(assignation, aeroportLocal, allDistances, vitesse);
             }
         }
         
@@ -372,10 +410,10 @@ public class AssignationService {
      */
     private String getDateHourMinuteKey(Reservation r) {
         String dateStr = r.getDateArriver();
-        if (dateStr != null && dateStr.length() >= 16) {
-            return dateStr.substring(0, 16);
-        }
-        return dateStr != null ? dateStr : "";
+        String dateKey = (dateStr != null && dateStr.length() >= 16) ? dateStr.substring(0, 16) : (dateStr != null ? dateStr : "");
+        int aeroId = (r.getLieuAtterissage() != null && r.getLieuAtterissage().getId() != null)
+                     ? r.getLieuAtterissage().getId() : 0;
+        return dateKey + "_AERO_" + aeroId;
     }
 
     /**

@@ -22,6 +22,11 @@ DELETE FROM type_lieu;
 INSERT INTO type_lieu (libelle) VALUES ('AEROPORT');
 INSERT INTO type_lieu (libelle) VALUES ('HOTEL');
 
+CREATE TABLE IF NOT EXISTS type_lieu (
+    id SERIAL PRIMARY KEY,
+    libelle VARCHAR(255) NOT NULL UNIQUE
+);
+
 -- =====================================================
 -- INSERTION DES LIEUX
 -- =====================================================
@@ -60,6 +65,9 @@ INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant) VAL
 -- INSERTION DES RESERVATIONS POUR TEST
 -- Date: 2026-03-05 (demain)
 -- =====================================================
+ALTER TABLE reservation RENAME COLUMN idHotel to idLieu;
+
+
 
 -- Reservation 1: 3 passagers -> devrait prendre voiture 5 places diesel (2222BB ou 3333CC)
 INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers) VALUES
