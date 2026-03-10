@@ -1,7 +1,6 @@
 package org.itu.controller;
 
 import java.sql.Date;
-import java.util.List;
 
 import org.itu.entity.Reservation;
 import org.itu.util.DB;
@@ -82,7 +81,7 @@ public class ReservationController {
         DB db = openDb();
         try {
             FonctionReservation fc = new FonctionReservation(db);
-            mv.addAttribute("hotels", fc.getAllHotels());
+            mv.addAttribute("lieux", fc.getAllLieux());
             return mv;
         } finally {
             db.disconnect();

@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
-<%@ page import="org.itu.entity.Hotel" %>
+<%@ page import="org.itu.entity.Lieu" %>
 
 <!DOCTYPE html>
 <html>
@@ -68,17 +68,17 @@
     <label>Nombre de passagers :</label>
     <input type="number" name="nombrePassager" required min="1">
 
-    <label>Hôtel :</label>
-    <select name="idHotel" required>
-        <option value="">-- Sélectionner un hôtel --</option>
+    <label>Lieu :</label>
+    <select name="idLieu" required>
+        <option value="">-- Sélectionner un lieu --</option>
 
         <%
-            List<Hotel> hotels = (List<Hotel>) request.getAttribute("hotels");
-            if (hotels != null) {
-                for (Hotel hotel : hotels) {
+            List<Lieu> lieux = (List<Lieu>) request.getAttribute("lieux");
+            if (lieux != null) {
+                for (Lieu lieu : lieux) {
         %>
-            <option value="<%= hotel.getId() %>">
-                <%= hotel.getNom() %>
+            <option value="<%= lieu.getId() %>">
+                <%= lieu.getLibelle() %> (<%= lieu.getTypeLieu() %>)
             </option>
         <%
                 }

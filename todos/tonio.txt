@@ -1,0 +1,3 @@
+parametre (vitesse moyenne anlheh fiara)km/h , TA : temps attente 
+hotel(id,code,libelle)
+distance(id,from,to,km)

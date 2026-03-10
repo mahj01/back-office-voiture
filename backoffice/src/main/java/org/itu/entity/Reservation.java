@@ -9,24 +9,24 @@ public class Reservation {
     private int idClient;
     private String dateArriver;
     private int nombrePassager;
-    private int idHotel;
-    private Hotel hotel;
+    private int idLieu;
+    private Lieu lieu;
 
     private DB db;
 
     public Reservation() {
     }
 
-    public Reservation(int id, int idClient, Timestamp dateArriver, int nombrePassager, Hotel hotel) {
+    public Reservation(int id, int idClient, Timestamp dateArriver, int nombrePassager, Lieu lieu) {
         this.id = id;
         this.idClient = idClient;
         if (dateArriver != null) {
             this.dateArriver = dateArriver.toString();
         }
         this.nombrePassager = nombrePassager;
-        this.hotel = hotel;
-        if (hotel != null) {
-            this.idHotel = hotel.getId();
+        this.lieu = lieu;
+        if (lieu != null) {
+            this.idLieu = lieu.getId();
         }
     }
     
@@ -64,19 +64,19 @@ public class Reservation {
     public void setNombrePassager(int nombrePassager) {
         this.nombrePassager = nombrePassager;
     }
-    public int getIdHotel() {
-        return idHotel;
+    public int getIdLieu() {
+        return idLieu;
     }
-    public void setIdHotel(int idHotel) {
-        this.idHotel = idHotel;
+    public void setIdLieu(int idLieu) {
+        this.idLieu = idLieu;
     }
-    public Hotel getHotel() {
-        return hotel;
+    public Lieu getLieu() {
+        return lieu;
     }
-    public void setHotel(Hotel hotel) {
-        this.hotel = hotel;
-        if (hotel != null) {
-            this.idHotel = hotel.getId();
+    public void setLieu(Lieu lieu) {
+        this.lieu = lieu;
+        if (lieu != null) {
+            this.idLieu = lieu.getId();
         }
     }
 
@@ -97,10 +97,10 @@ public class Reservation {
     }
 
     public void createReservation() {
-        String sql = "INSERT INTO reservation (idClient, idHotel, dateArrivee, nombrePassagers) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers) VALUES (?, ?, ?, ?)";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setInt(1, this.idClient);
-            stmt.setInt(2, this.idHotel);
+            stmt.setInt(2, this.idLieu);
             stmt.setTimestamp(3, this.getDateArriverAsTimestamp());
             stmt.setInt(4, this.nombrePassager);
             stmt.executeUpdate();

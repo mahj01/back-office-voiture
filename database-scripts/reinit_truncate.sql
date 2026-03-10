@@ -29,6 +29,7 @@ RESTART IDENTITY CASCADE;
 SELECT CASE WHEN to_regclass('dev.hotel') IS NOT NULL THEN (SELECT COUNT(*) FROM dev.hotel) ELSE 0 END AS dev_hotel_count;
 SELECT CASE WHEN to_regclass('dev.reservation') IS NOT NULL THEN (SELECT COUNT(*) FROM dev.reservation) ELSE 0 END AS dev_reservation_count;
 SELECT CASE WHEN to_regclass('dev.parametres') IS NOT NULL THEN (SELECT COUNT(*) FROM dev.parametres) ELSE 0 END AS dev_parametres_count;
+SELECT CASE WHEN to_regclass('public.voiture') IS NOT NULL THEN (SELECT COUNT(*) FROM public.voiture) ELSE 0 END AS public_voiture_count;
 SELECT CASE WHEN to_regclass('public.token') IS NOT NULL THEN (SELECT COUNT(*) FROM public.token) ELSE 0 END AS public_token_count;
 
 -- Note:

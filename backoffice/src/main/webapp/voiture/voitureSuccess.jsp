@@ -34,7 +34,7 @@
         %>
 
         <p>
-            <a class="button" href="voitureList.jsp">Retour à la liste des voitures</a>
+            <a class="button" href="../liste">Retour à la liste des voitures</a>
         </p>
     </div>
 </body>
