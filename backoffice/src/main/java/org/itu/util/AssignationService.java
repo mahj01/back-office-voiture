@@ -347,17 +347,18 @@ public class AssignationService {
                 return db2.compareTo(da); // décroissant
             });
 
-            // Copie de travail triée par dateArrivee croissante pour le regroupement par intervalle
+            // Copie de travail triée par dateArrivee descendante (comme demandé sprint 5)
             List<Reservation> remaining = new ArrayList<>(airportReservations);
-            remaining.sort((a, b) -> {
-                String da = a.getDateArriver() != null ? a.getDateArriver() : "";
-                String db2 = b.getDateArriver() != null ? b.getDateArriver() : "";
-                return da.compareTo(db2); // croissant
-            });
 
             while (!remaining.isEmpty()) {
-                // La réservation avec le min dateArrivee (première dans la liste triée croissant)
+                // Trouver le min dateArrivee parmi les réservations restantes (pour l'intervalle)
                 Reservation anchor = remaining.get(0);
+                for (Reservation r : remaining) {
+                    if (r.getDateArriverAsTimestamp() != null && (anchor.getDateArriverAsTimestamp() == null
+                            || r.getDateArriverAsTimestamp().before(anchor.getDateArriverAsTimestamp()))) {
+                        anchor = r;
+                    }
+                }
                 java.sql.Timestamp minTime = anchor.getDateArriverAsTimestamp();
 
                 // Former le groupe : toutes les réservations dans [minTime, minTime + TA]
