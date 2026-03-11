@@ -86,6 +86,21 @@
         %>
     </select>
 
+    <label>Aéroport d'atterrissage :</label>
+    <select name="idLieuAtterissage" required>
+        <option value="">-- Sélectionner un aéroport --</option>
+        <%
+            List<Lieu> aeroports = (List<Lieu>) request.getAttribute("aeroports");
+            if (aeroports != null) {
+                for (Lieu aero : aeroports) {
+        %>
+            <option value="<%= aero.getId() %>"><%= aero.getLibelle() %></option>
+        <%
+                }
+            }
+        %>
+    </select>
+
     <button type="submit">Créer la Réservation</button>
 </form>
 

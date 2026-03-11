@@ -68,7 +68,7 @@
         <p><strong>Nombre de passagers:</strong> <% out.print(((org.itu.entity.Reservation)request.getAttribute("reservation")).getNombrePassager()); %></p>
     </div>
     
-    <a href="createReservation.jsp" class="btn-back">Nouvelle Réservation</a>
+    <a href="saisie" class="btn-back">Nouvelle Réservation</a>
 </div>
 
 </body>

@@ -1,3 +1,11 @@
 parametre (vitesse moyenne anlheh fiara)km/h , TA : temps attente 
 hotel(id,code,libelle)
 distance(id,from,to,km)
+
+
+regroupement dans une meme voiture , pour les reservation de meme heure et minunte :
+    - regrouper les reservation de meme heure et minute avec ordre decroissante de nombre de passager
+    - regrouper les voiture avec ordre decroisssante de nombre de place
+    - prenent le premier reservation avec le max nombre passager et mettre dans une voiture de max nombre de place , et apres voir les autre reservation qui sont encore rentrer dans ce voiture , si le voiture est plein avec il refait le regle de metier mais enlever celle qui est deja dans une voiture
+    - sur l affichage , regroupe par le voiture et affiche les reservation porter par ce voiture , et les trajet qu il va faire et de revenir au point de depart 
+    

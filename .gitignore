@@ -2,4 +2,5 @@
 .env
 /backoffice/.idea
 deploy.sh
+deployer.sh
 deploy.bat

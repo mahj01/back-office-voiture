@@ -83,6 +83,8 @@ button:hover {
     <label>Modèle: <input type="text" name="modele" required></label><br>
     <label>Nombre de places: <input type="number" name="nombrePlaces" min="1" required></label><br>
     <label>Type carburant: <input type="text" name="typeCarburant" required></label><br>
+    <label>Vitesse moyenne (km/h): <input type="number" step="0.01" min="0" name="vitesseMoyenne"></label><br>
+    <label>Temps d'attente (min): <input type="number" step="0.01" min="0" name="tempAttente"></label><br>
     <button type="submit">Créer</button>
 </form>
 <p><a href="liste">Retour à la liste</a></p>

@@ -8,6 +8,11 @@ CREATE TABLE parametre (
     valeur VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE type_lieu (
+    id SERIAL PRIMARY KEY,
+    libelle VARCHAR(255) NOT NULL
+);
+
 -- ================================
 -- 2) RENOMMER hotel EN lieu
 -- ================================
@@ -20,6 +25,7 @@ ALTER TABLE hotel RENAME TO lieu;
 
 -- Supprimer colonne nom
 ALTER TABLE lieu DROP COLUMN nom;
+ALTER TABLE reservation DROP COLUMN idHotel;
 
 -- Ajouter nouvelles colonnes
 ALTER TABLE lieu ADD COLUMN code VARCHAR(255) NOT NULL;
@@ -44,3 +50,7 @@ CREATE TABLE distance (
         REFERENCES lieu(id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE reservation ADD COLUMN idLieu INT NOT NULL;
+ALTER TABLE reservation ADD CONSTRAINT fk_idLieu FOREIGN KEY (idLieu) REFERENCES lieu(id);
+

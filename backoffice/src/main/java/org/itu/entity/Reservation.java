@@ -11,6 +11,8 @@ public class Reservation {
     private int nombrePassager;
     private int idLieu;
     private Lieu lieu;
+    private int idLieuAtterissage;
+    private Lieu lieuAtterissage;
 
     private DB db;
 
@@ -27,6 +29,14 @@ public class Reservation {
         this.lieu = lieu;
         if (lieu != null) {
             this.idLieu = lieu.getId();
+        }
+    }
+
+    public Reservation(int id, int idClient, Timestamp dateArriver, int nombrePassager, Lieu lieu, Lieu lieuAtterissage) {
+        this(id, idClient, dateArriver, nombrePassager, lieu);
+        this.lieuAtterissage = lieuAtterissage;
+        if (lieuAtterissage != null) {
+            this.idLieuAtterissage = lieuAtterissage.getId();
         }
     }
     
@@ -79,6 +89,21 @@ public class Reservation {
             this.idLieu = lieu.getId();
         }
     }
+    public int getIdLieuAtterissage() {
+        return idLieuAtterissage;
+    }
+    public void setIdLieuAtterissage(int idLieuAtterissage) {
+        this.idLieuAtterissage = idLieuAtterissage;
+    }
+    public Lieu getLieuAtterissage() {
+        return lieuAtterissage;
+    }
+    public void setLieuAtterissage(Lieu lieuAtterissage) {
+        this.lieuAtterissage = lieuAtterissage;
+        if (lieuAtterissage != null) {
+            this.idLieuAtterissage = lieuAtterissage.getId();
+        }
+    }
 
     public void connect(DB db)
     {
@@ -97,12 +122,17 @@ public class Reservation {
     }
 
     public void createReservation() {
-        String sql = "INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers, idLieuAtterissage) VALUES (?, ?, ?, ?, ?)";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setInt(1, this.idClient);
             stmt.setInt(2, this.idLieu);
             stmt.setTimestamp(3, this.getDateArriverAsTimestamp());
             stmt.setInt(4, this.nombrePassager);
+            if (this.idLieuAtterissage > 0) {
+                stmt.setInt(5, this.idLieuAtterissage);
+            } else {
+                stmt.setNull(5, java.sql.Types.INTEGER);
+            }
             stmt.executeUpdate();
             System.out.println("Réservation créée avec succès.");
         } catch (java.sql.SQLException e) {

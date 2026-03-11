@@ -88,6 +88,8 @@ button:hover {
     <p><strong>Modèle:</strong> <%= v.getModele() %></p>
     <p><strong>Nombre de places:</strong> <%= v.getNombrePlaces() %></p>
     <p><strong>Type carburant:</strong> <%= v.getTypeCarburant() %></p>
+    <p><strong>Vitesse moyenne:</strong> <%= v.getVitesseMoyenne() != null ? v.getVitesseMoyenne() + " km/h" : "N/A" %></p>
+    <p><strong>Temps d'attente:</strong> <%= v.getTempAttente() != null ? v.getTempAttente() + " min" : "N/A" %></p>
 <% } else { %>
     <p>Aucune donnée disponible pour la voiture (id=<%= id %>).</p>
 <% } %>
