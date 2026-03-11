@@ -1,26 +1,4 @@
--- ============================================================
--- SCRIPT DE TEST : Regroupement par temps d'attente (TA)
--- ============================================================
--- Scénario : TA = 30 minutes (paramètre en base)
--- Date de test : 2026-03-15
---
--- Réservations insérées (même date, heures variées) :
---   R1: 08:00 - 2 passagers - Hôtel Colbert
---   R2: 08:10 - 3 passagers - Hôtel Carlton
---   R3: 08:25 - 1 passager  - Gare Soarano
---   R4: 09:00 - 4 passagers - Hôtel Colbert
---   R5: 09:20 - 2 passagers - Hôtel Carlton
---   R6: 11:00 - 5 passagers - Hôtel Colbert
---   R7: 11:45 - 3 passagers - Gare Soarano
---   R8: 14:00 - 6 passagers - Hôtel Carlton
---
--- Résultat attendu avec TA = 30 min :
---   Groupe 1 : R1(08:00) + R2(08:10) + R3(08:25) → intervalle [08:00, 08:30] → 6 passagers → 1 voiture 8 places
---   Groupe 2 : R4(09:00) + R5(09:20) → intervalle [09:00, 09:30] → 6 passagers → 1 voiture 8 places
---   Groupe 3 : R6(11:00) → seule → 5 passagers → 1 voiture 5 places
---   Groupe 4 : R7(11:45) → seule → 3 passagers → 1 voiture 5 places
---   Groupe 5 : R8(14:00) → seule → 6 passagers → 1 voiture 8 places
--- ============================================================
+
 
 -- ── 0. NETTOYAGE ─────────────────────────────────────────
 DELETE FROM reservation WHERE idclient IN (101, 102, 103, 104, 105, 106, 107, 108);
@@ -76,12 +54,7 @@ FROM lieu a, lieu b WHERE a.code = 'HOT2' AND b.code = 'GAR';
 -- S'assurer qu'on a des voitures avec vitesse_moyenne et temp_attente
 UPDATE voiture SET vitesse_moyenne = 40.00, temp_attente = 30.00 WHERE vitesse_moyenne IS NULL;
 
--- ── 4. INSERTION DES RÉSERVATIONS DE TEST ────────────────
--- Date : 2026-03-15
--- Toutes les réservations atterrissent au même aéroport (Ivato)
 
--- GROUPE 1 attendu : [08:00 - 08:30]
--- R1: 08:00 - 2 passagers - Hôtel Colbert
 INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers, idLieuAtterissage)
 VALUES (101,
         (SELECT id FROM lieu WHERE code = 'HOT1' LIMIT 1),
