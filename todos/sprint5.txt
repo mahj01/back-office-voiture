@@ -1,0 +1,22 @@
+Sprint 5:
+    TL: 
+    Developper 1: 
+    Developper 2: 
+
+    MCD:
+        -voiture: add TA(temps d'attente)
+
+    Regle de gestion de voiture:
+        - regrouper les reservation inclu dans le heure,minute dateArrivee et ce heure + temps d'attente
+
+    Dev 1 : 
+        
+    Dev 2 :
+        
+
+    Temps d attente des vooiture :
+        -   exemple temps d'attente = 30 minunte 
+        -  prend tous les reservation de ce date (negniger le heure et minute)
+        -  filtre par decroissante(l heure et minute du dateArrivee ) 
+        -  regrouper les reservations qui est inclu dans l intervale fermer de la minimum heure,minute dans dateArrivee et la minimum heure,minimum dans dateArrivee + temps d'attente metre dans une voiture le resvation qui a min dateArrivee
+        -   les regle de base existant sont inchanger

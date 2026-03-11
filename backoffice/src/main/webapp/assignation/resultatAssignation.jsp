@@ -40,13 +40,15 @@
     String dateReservation = (String) request.getAttribute("dateReservation");
     Integer nombreReservations = (Integer) request.getAttribute("nombreReservations");
     Integer nombreVoitures = (Integer) request.getAttribute("nombreVoitures");
+    Double tempsAttente = (Double) request.getAttribute("tempsAttente");
     List<AssignationVoiture> assignations = (List<AssignationVoiture>) request.getAttribute("assignations");
 %>
 
     <div class="alert alert-success text-center">
         <i class="bi bi-calendar-check"></i> <strong>Date :</strong> <%= dateReservation %> |
         <i class="bi bi-list-ol"></i> <strong>Réservations :</strong> <%= nombreReservations != null ? nombreReservations : 0 %> |
-        <i class="bi bi-car-front"></i> <strong>Voitures utilisées :</strong> <%= nombreVoitures != null ? nombreVoitures : 0 %>
+        <i class="bi bi-car-front"></i> <strong>Voitures utilisées :</strong> <%= nombreVoitures != null ? nombreVoitures : 0 %> |
+        <i class="bi bi-hourglass-split"></i> <strong>Temps d'attente :</strong> <%= tempsAttente != null ? tempsAttente.intValue() : 30 %> min
     </div>
 
 <%

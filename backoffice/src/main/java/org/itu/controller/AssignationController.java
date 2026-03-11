@@ -52,6 +52,7 @@ public class AssignationController {
             
             AssignationService service = new AssignationService(db);
             List<AssignationVoiture> assignations = service.assignerVoitures(date);
+            double tempsAttente = service.getTempsAttenteMinutes();
 
             int totalReservations = 0;
             for (AssignationVoiture a : assignations) {
@@ -62,6 +63,7 @@ public class AssignationController {
             mv.addAttribute("dateReservation", dateStr);
             mv.addAttribute("nombreReservations", totalReservations);
             mv.addAttribute("nombreVoitures", assignations.size());
+            mv.addAttribute("tempsAttente", tempsAttente);
 
             return mv;
         } catch (Exception e) {
