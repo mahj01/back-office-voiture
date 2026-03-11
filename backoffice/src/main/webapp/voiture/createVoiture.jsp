@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Créer une voiture</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
 /* styles existants */
 form {
@@ -76,6 +78,8 @@ button:hover {
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 <h2>Créer une voiture</h2>
 <form method="post" action="create">
     <label>Matricule: <input type="text" name="matricule" required></label><br>
@@ -88,5 +92,7 @@ button:hover {
     <button type="submit">Créer</button>
 </form>
 <p><a href="liste">Retour à la liste</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

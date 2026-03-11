@@ -4,15 +4,15 @@ Sprint 5:
     Developper 2: 
 
     MCD:
-        -voiture: add TA(temps d'attente)
 
     Regle de gestion de voiture:
         - regrouper les reservation inclu dans le heure,minute dateArrivee et ce heure + temps d'attente
+        - le temps de deaprt est le max temps dans la regroupement 
 
     Dev 1 : 
-        
+        -   
     Dev 2 :
-        
+        -
 
     Temps d attente des vooiture :
         -   exemple temps d'attente = 30 minunte 

@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Liste des voitures</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}</style>
 
 <style>
@@ -78,6 +80,8 @@ button:hover {
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 <h2>Liste des voitures</h2>
 <p><a href="saisie">Créer une nouvelle voiture</a></p>
 <table>
@@ -125,5 +129,7 @@ button:hover {
     <% } %>
     </tbody>
 </table>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

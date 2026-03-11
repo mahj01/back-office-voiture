@@ -12,11 +12,12 @@
     <style>
         body {
             background-color: #f5f5f5;
-            padding-top: 50px;
         }
     </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 
 <div class="container" style="max-width: 600px;">
     <h2 class="text-center mb-4">
@@ -51,6 +52,7 @@
             </form>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Bootstrap JS -->
