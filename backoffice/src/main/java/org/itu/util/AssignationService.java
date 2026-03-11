@@ -439,15 +439,15 @@ public class AssignationService {
                             voituresTriees.removeIf(v -> v.getId() == voitureId);
                         }
 
-                        // Calcul temps : la réservation de référence = min dateArrivee du groupe assigné
-                        Reservation earliest = assignation.getReservations().get(0);
+                        // Temps de départ = max dateArrivee du groupe (la voiture attend le dernier passager)
+                        Reservation latest = assignation.getReservations().get(0);
                         for (Reservation r : assignation.getReservations()) {
-                            if (r.getDateArriverAsTimestamp() != null && earliest.getDateArriverAsTimestamp() != null
-                                    && r.getDateArriverAsTimestamp().before(earliest.getDateArriverAsTimestamp())) {
-                                earliest = r;
+                            if (r.getDateArriverAsTimestamp() != null && latest.getDateArriverAsTimestamp() != null
+                                    && r.getDateArriverAsTimestamp().after(latest.getDateArriverAsTimestamp())) {
+                                latest = r;
                             }
                         }
-                        assignation.setReservation(earliest);
+                        assignation.setReservation(latest);
 
                         assignations.add(assignation);
                     }
