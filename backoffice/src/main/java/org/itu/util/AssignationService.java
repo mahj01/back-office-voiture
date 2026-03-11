@@ -221,13 +221,13 @@ public class AssignationService {
             voiture != null ? voiture.getMatricule() : "?",
             totalKm, vitesseKmH, tempsConduiteMin);
 
-        // --- Heure de retour = heure de départ + temps de conduite ---
+        // --- Heure de retour = heure de départ + temps de conduite (arrondi) ---
         if (vitesseKmH > 0 && assignation.getReservation() != null) {
             String dateStr = assignation.getReservation().getDateArriver();
             if (dateStr != null) {
                 try {
                     java.sql.Timestamp depart = java.sql.Timestamp.valueOf(dateStr);
-                    long millis = (long) (tempsConduiteMin * 60 * 1000);
+                    long millis = assignation.getTempsTrajetMinutes() * 60 * 1000;
                     java.sql.Timestamp retour = new java.sql.Timestamp(depart.getTime() + millis);
                     assignation.setHeureRetourAeroport(retour.toString().substring(11, 16));
                 } catch (Exception e) {
