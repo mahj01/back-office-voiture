@@ -433,32 +433,21 @@ public class AssignationService {
                             }
                             groupRemaining.removeAll(fitted);
 
-                            // Pour le calcul de temps : utiliser la réservation avec le min dateArrivee
-                            Reservation earliest = mainReservation;
-                            for (Reservation r : assignation.getReservations()) {
-                                if (r.getDateArriverAsTimestamp() != null && earliest.getDateArriverAsTimestamp() != null
-                                        && r.getDateArriverAsTimestamp().before(earliest.getDateArriverAsTimestamp())) {
-                                    earliest = r;
-                                }
-                            }
-                            assignation.setReservation(earliest);
-
                             // Retirer cette voiture de la liste des disponibles
                             final int voitureId = bestVoiture.getId();
                             voituresDisponibles.removeIf(v -> v.getId() == voitureId);
                             voituresTriees.removeIf(v -> v.getId() == voitureId);
                         }
 
-                        // La réservation principale = celle avec le min dateArrivee du groupe
-                        Reservation minReservation = assignation.getReservations().get(0);
+                        // Calcul temps : la réservation de référence = min dateArrivee du groupe assigné
+                        Reservation earliest = assignation.getReservations().get(0);
                         for (Reservation r : assignation.getReservations()) {
-                            String dMin = minReservation.getDateArriver() != null ? minReservation.getDateArriver() : "";
-                            String dR = r.getDateArriver() != null ? r.getDateArriver() : "";
-                            if (dR.compareTo(dMin) < 0) {
-                                minReservation = r;
+                            if (r.getDateArriverAsTimestamp() != null && earliest.getDateArriverAsTimestamp() != null
+                                    && r.getDateArriverAsTimestamp().before(earliest.getDateArriverAsTimestamp())) {
+                                earliest = r;
                             }
                         }
-                        assignation.setReservation(minReservation);
+                        assignation.setReservation(earliest);
 
                         assignations.add(assignation);
                     }
