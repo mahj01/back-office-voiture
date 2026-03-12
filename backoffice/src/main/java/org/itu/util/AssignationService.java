@@ -312,10 +312,11 @@ public class AssignationService {
     /**
      * Assigne les voitures aux réservations pour une date donnée.
      * 1. Sous-grouper par aéroport (lieu d'atterrissage)
-     * 2. Trier les réservations par date d'arrivée DESC
-     * 3. Regrouper les réservations par fenêtre de temps [dateArrivée, dateArrivée + TA]
-     * 4. Calculer le total passagers de chaque groupe
-     * 5. Choisir la voiture de capacité la plus proche (priorité >= total)
+     * 2. Trier par nombre de passagers DESC
+     * 3. Prendre la réservation avec le max passagers → voiture avec max places
+     * 4. Remplir cette voiture avec les réservations compatibles
+     *    (dans l'intervalle [dateArrivée, dateArrivée + TA] et qui rentrent en places)
+     * 5. Quand plus personne ne rentre → changer de voiture, recommencer avec le reste
      */
     public List<AssignationVoiture> assignerVoitures(Date date) {
         List<AssignationVoiture> assignations = new ArrayList<>();
@@ -343,69 +344,63 @@ public class AssignationService {
 
         // Traiter chaque sous-groupe aéroport
         for (List<Reservation> airportReservations : airportGroups.values()) {
-            // Tri descendant des réservations par date d'arrivée
+            // Trier par nombre de passagers DESC, puis dateArrivee DESC
             airportReservations.sort((a, b) -> {
+                int cmp = b.getNombrePassager() - a.getNombrePassager();
+                if (cmp != 0) return cmp;
                 String da = a.getDateArriver() != null ? a.getDateArriver() : "";
                 String db2 = b.getDateArriver() != null ? b.getDateArriver() : "";
-                int cmp = db2.compareTo(da);
-                if (cmp != 0) return cmp;
-                return b.getNombrePassager() - a.getNombrePassager();
+                return db2.compareTo(da);
             });
 
             List<Reservation> remaining = new ArrayList<>(airportReservations);
 
             while (!remaining.isEmpty()) {
-                // On construit le groupe à partir de la plus ancienne réservation restante,
-                // puis on prend toutes celles dans [dateArrivee, dateArrivee + TA].
-                Reservation baseReservation = remaining.remove(remaining.size() - 1);
-                java.sql.Timestamp baseTime = baseReservation.getDateArriverAsTimestamp();
-                long baseMillis = baseTime != null ? baseTime.getTime() : 0L;
-                long maxMillis = baseMillis + Math.round(tempsAttente * 60_000.0);
+                // Prendre la première réservation (max passagers)
+                Reservation mainReservation = remaining.remove(0);
+                java.sql.Timestamp mainTime = mainReservation.getDateArriverAsTimestamp();
 
-                List<Reservation> groupe = new ArrayList<>();
-                groupe.add(baseReservation);
-
-                List<Reservation> matched = new ArrayList<>();
-                for (Reservation r : remaining) {
-                    java.sql.Timestamp rTime = r.getDateArriverAsTimestamp();
-                    boolean dansIntervalle = false;
-
-                    if (baseTime != null && rTime != null) {
-                        long t = rTime.getTime();
-                        dansIntervalle = (t >= baseMillis && t <= maxMillis);
-                    } else {
-                        // fallback: sans timestamp exploitable, on groupe seulement les dates texte égales
-                        String d1 = baseReservation.getDateArriver();
-                        String d2 = r.getDateArriver();
-                        dansIntervalle = (d1 != null && d1.equals(d2));
-                    }
-
-                    if (dansIntervalle) {
-                        groupe.add(r);
-                        matched.add(r);
+                // Trouver la voiture avec le max de places
+                Voiture bestVoiture = null;
+                for (Voiture v : voituresTriees) {
+                    if (v.getNombrePlaces() >= mainReservation.getNombrePassager()) {
+                        bestVoiture = v;
+                        break;
                     }
                 }
-                remaining.removeAll(matched);
 
-                int totalPassagers = 0;
-                for (Reservation r : groupe) {
-                    totalPassagers += r.getNombrePassager();
-                }
-
-                Voiture bestVoiture = trouverMeilleureVoiture(totalPassagers);
-                AssignationVoiture assignation = new AssignationVoiture(baseReservation, bestVoiture);
-
-                for (int i = 1; i < groupe.size(); i++) {
-                    assignation.addReservation(groupe.get(i));
-                }
+                AssignationVoiture assignation = new AssignationVoiture(mainReservation, bestVoiture);
 
                 if (bestVoiture != null) {
+                    int capaciteRestante = bestVoiture.getNombrePlaces() - mainReservation.getNombrePassager();
+
+                    // Chercher les réservations compatibles : dans [mainTime, mainTime + TA] et qui rentrent
+                    List<Reservation> fitted = new ArrayList<>();
+                    for (Reservation r : remaining) {
+                        java.sql.Timestamp rTime = r.getDateArriverAsTimestamp();
+                        boolean dansIntervalle = false;
+                        if (mainTime != null && rTime != null) {
+                            long diffMinutes = Math.abs(rTime.getTime() - mainTime.getTime()) / (60 * 1000);
+                            dansIntervalle = (diffMinutes <= (long) tempsAttente);
+                        } else {
+                            dansIntervalle = true;
+                        }
+
+                        if (dansIntervalle && r.getNombrePassager() <= capaciteRestante) {
+                            assignation.addReservation(r);
+                            capaciteRestante -= r.getNombrePassager();
+                            fitted.add(r);
+                        }
+                    }
+                    remaining.removeAll(fitted);
+
+                    // Retirer cette voiture de la liste des disponibles
                     final int voitureId = bestVoiture.getId();
                     voituresDisponibles.removeIf(v -> v.getId() == voitureId);
                     voituresTriees.removeIf(v -> v.getId() == voitureId);
                 }
 
-                // Départ sur la date max du groupe (dernier passager arrivé)
+                // Temps de départ = max dateArrivee du groupe (la voiture attend le dernier passager)
                 Reservation latest = assignation.getReservations().get(0);
                 for (Reservation r : assignation.getReservations()) {
                     if (r.getDateArriverAsTimestamp() != null && latest.getDateArriverAsTimestamp() != null
@@ -414,6 +409,7 @@ public class AssignationService {
                     }
                 }
                 assignation.setReservation(latest);
+
                 assignations.add(assignation);
             }
         }
@@ -439,42 +435,38 @@ public class AssignationService {
     /**
      * Trouve la meilleure voiture pour un nombre de passagers donné
      * Règles:
-     * 1. Priorité aux voitures avec nombrePlaces >= nombrePassagers
-     * 2. Dans un même groupe, prendre le plus petit écart absolu
+     * 1. nombrePlaces >= nombrePassagers
+     * 2. Moins d'écart de places possible
      * 3. Priorité diesel si égalité
      * 4. Random si encore égalité
      */
     private Voiture trouverMeilleureVoiture(int nombrePassagers) {
-        // 1) Priorité aux voitures pouvant contenir tout le groupe
+        // Filtrer les voitures avec assez de places
         List<Voiture> voituresCompatibles = new ArrayList<>();
         for (Voiture v : voituresDisponibles) {
             if (v.getNombrePlaces() >= nombrePassagers) {
                 voituresCompatibles.add(v);
             }
         }
-
-        // 2) Fallback: si aucune voiture suffisante, prendre la plus proche en capacité
+        
         if (voituresCompatibles.isEmpty()) {
-            voituresCompatibles = new ArrayList<>(voituresDisponibles);
-            if (voituresCompatibles.isEmpty()) {
-                return null;
-            }
+            return null; // Aucune voiture disponible
         }
-
-        // 3) Ecart absolu minimum
+        
+        // Trouver l'écart minimum
         int ecartMin = Integer.MAX_VALUE;
         for (Voiture v : voituresCompatibles) {
-            int ecart = Math.abs(v.getNombrePlaces() - nombrePassagers);
-            if (ecart < ecartMin) {
+            int ecart = v.getNombrePlaces() - nombrePassagers;
+            if (ecart < ecartMin && ecart >= 0) {
                 ecartMin = ecart;
             }
         }
-
-        // 4) Garder seulement les voitures avec l'écart minimum
+        
+        // Garder seulement les voitures avec l'écart minimum
         final int finalEcartMin = ecartMin;
         List<Voiture> voituresEcartMin = new ArrayList<>();
         for (Voiture v : voituresCompatibles) {
-            if (Math.abs(v.getNombrePlaces() - nombrePassagers) == finalEcartMin) {
+            if (v.getNombrePlaces() - nombrePassagers == finalEcartMin) {
                 voituresEcartMin.add(v);
             }
         }
