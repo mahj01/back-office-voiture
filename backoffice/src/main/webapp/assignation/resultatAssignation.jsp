@@ -13,7 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f5f5f5; padding: 30px 0; }
+        body { background-color: #f5f5f5; }
         .voiture-card { border-left: 4px solid #0d6efd; }
         .voiture-card.no-voiture { border-left-color: #dc3545; }
         .itineraire-step { display: inline-flex; align-items: center; }
@@ -21,6 +21,8 @@
     </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 
 <div class="container">
     <h2 class="text-center mb-4">
@@ -40,13 +42,15 @@
     String dateReservation = (String) request.getAttribute("dateReservation");
     Integer nombreReservations = (Integer) request.getAttribute("nombreReservations");
     Integer nombreVoitures = (Integer) request.getAttribute("nombreVoitures");
+    Double tempsAttente = (Double) request.getAttribute("tempsAttente");
     List<AssignationVoiture> assignations = (List<AssignationVoiture>) request.getAttribute("assignations");
 %>
 
     <div class="alert alert-success text-center">
         <i class="bi bi-calendar-check"></i> <strong>Date :</strong> <%= dateReservation %> |
         <i class="bi bi-list-ol"></i> <strong>Réservations :</strong> <%= nombreReservations != null ? nombreReservations : 0 %> |
-        <i class="bi bi-car-front"></i> <strong>Voitures utilisées :</strong> <%= nombreVoitures != null ? nombreVoitures : 0 %>
+        <i class="bi bi-car-front"></i> <strong>Voitures utilisées :</strong> <%= nombreVoitures != null ? nombreVoitures : 0 %> |
+        <i class="bi bi-hourglass-split"></i> <strong>Temps d'attente :</strong> <%= tempsAttente != null ? tempsAttente.intValue() : 30 %> min
     </div>
 
 <%
@@ -253,6 +257,7 @@
             <i class="bi bi-arrow-left"></i> Retour
         </a>
     </div>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

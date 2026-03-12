@@ -58,6 +58,23 @@ public class AssignationService {
     }
 
     /**
+     * Récupère le temps d'attente global en minutes depuis la table parametre (libelle = 'temps_attente' ou code = 'TA')
+     */
+    public double getTempsAttenteMinutes() {
+        String sql = "SELECT valeur FROM parametre WHERE LOWER(libelle) IN ('temps_attente', 'ta') LIMIT 1";
+        try (java.sql.Statement stmt = db.getConnection().createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                String val = rs.getString("valeur").replaceAll("[^0-9.]", "");
+                return Double.parseDouble(val);
+            }
+        } catch (SQLException e) {
+            System.out.println("Erreur lors de la récupération du temps d'attente : " + e.getMessage());
+        }
+        return 30.0; // valeur par défaut: 30 minutes
+    }
+
+    /**
      * Récupère le lieu de type AEROPORT
      */
     public Lieu getAeroport() {
@@ -204,13 +221,13 @@ public class AssignationService {
             voiture != null ? voiture.getMatricule() : "?",
             totalKm, vitesseKmH, tempsConduiteMin);
 
-        // --- Heure de retour = heure de départ + temps de conduite ---
+        // --- Heure de retour = heure de départ + temps de conduite (arrondi) ---
         if (vitesseKmH > 0 && assignation.getReservation() != null) {
             String dateStr = assignation.getReservation().getDateArriver();
             if (dateStr != null) {
                 try {
                     java.sql.Timestamp depart = java.sql.Timestamp.valueOf(dateStr);
-                    long millis = (long) (tempsConduiteMin * 60 * 1000);
+                    long millis = assignation.getTempsTrajetMinutes() * 60 * 1000;
                     java.sql.Timestamp retour = new java.sql.Timestamp(depart.getTime() + millis);
                     assignation.setHeureRetourAeroport(retour.toString().substring(11, 16));
                 } catch (Exception e) {
@@ -294,106 +311,116 @@ public class AssignationService {
 
     /**
      * Assigne les voitures aux réservations pour une date donnée.
-     * Les réservations avec la même heure et minute sont regroupées dans la même voiture.
-     * Algorithme:
-     * 1. Regrouper les réservations par heure:minute
-     * 2. Trier les réservations par nombre décroissant de passagers
-     * 3. Trier les voitures par nombre décroissant de places
-     * 4. Prendre la réservation avec le max de passagers → voiture avec max de places
-     * 5. Remplir la voiture avec d'autres réservations du même créneau si possible
-     * 6. Si la voiture est pleine, répéter avec les réservations restantes
+     * 1. Sous-grouper par aéroport (lieu d'atterrissage)
+     * 2. Trier par nombre de passagers DESC
+     * 3. Prendre la réservation avec le max passagers → voiture avec max places
+     * 4. Remplir cette voiture avec les réservations compatibles
+     *    (dans l'intervalle [dateArrivée, dateArrivée + TA] et qui rentrent en places)
+     * 5. Quand plus personne ne rentre → changer de voiture, recommencer avec le reste
      */
     public List<AssignationVoiture> assignerVoitures(Date date) {
         List<AssignationVoiture> assignations = new ArrayList<>();
-        
+
         // Récupérer toutes les voitures disponibles
         voituresDisponibles = getAllVoitures();
-        
+
         // Récupérer les réservations du jour
         List<Reservation> reservations = getReservationsByDate(date);
-        
-        // Regrouper les réservations par date, heure et minute exacte
-        Map<String, List<Reservation>> groups = new LinkedHashMap<>();
+
+        // Récupérer le temps d'attente global (TA) en minutes
+        double tempsAttente = getTempsAttenteMinutes();
+
+        // Sous-grouper par aéroport (lieu d'atterrissage)
+        Map<Integer, List<Reservation>> airportGroups = new LinkedHashMap<>();
         for (Reservation r : reservations) {
-            String key = getDateHourMinuteKey(r);
-            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(r);
+            int aeroId = (r.getLieuAtterissage() != null && r.getLieuAtterissage().getId() != null)
+                         ? r.getLieuAtterissage().getId() : 0;
+            airportGroups.computeIfAbsent(aeroId, k -> new ArrayList<>()).add(r);
         }
-        
-        // Traiter chaque groupe
-        for (List<Reservation> group : groups.values()) {
-            if (group.size() == 1) {
-                // Réservation unique - logique existante (min écart, diesel, random)
-                Reservation reservation = group.get(0);
-                Voiture voitureAssignee = trouverMeilleureVoiture(reservation.getNombrePassager());
-                
-                AssignationVoiture assignation = new AssignationVoiture(reservation, voitureAssignee);
+
+        // Trier les voitures disponibles par nombre décroissant de places
+        List<Voiture> voituresTriees = new ArrayList<>(voituresDisponibles);
+        voituresTriees.sort((a, b) -> b.getNombrePlaces() - a.getNombrePlaces());
+
+        // Traiter chaque sous-groupe aéroport
+        for (List<Reservation> airportReservations : airportGroups.values()) {
+            // Trier par nombre de passagers DESC, puis dateArrivee DESC
+            airportReservations.sort((a, b) -> {
+                int cmp = b.getNombrePassager() - a.getNombrePassager();
+                if (cmp != 0) return cmp;
+                String da = a.getDateArriver() != null ? a.getDateArriver() : "";
+                String db2 = b.getDateArriver() != null ? b.getDateArriver() : "";
+                return db2.compareTo(da);
+            });
+
+            List<Reservation> remaining = new ArrayList<>(airportReservations);
+
+            while (!remaining.isEmpty()) {
+                // Prendre la première réservation (max passagers)
+                Reservation mainReservation = remaining.remove(0);
+                java.sql.Timestamp mainTime = mainReservation.getDateArriverAsTimestamp();
+
+                // Trouver la voiture avec le max de places
+                Voiture bestVoiture = null;
+                for (Voiture v : voituresTriees) {
+                    if (v.getNombrePlaces() >= mainReservation.getNombrePassager()) {
+                        bestVoiture = v;
+                        break;
+                    }
+                }
+
+                AssignationVoiture assignation = new AssignationVoiture(mainReservation, bestVoiture);
+
+                if (bestVoiture != null) {
+                    int capaciteRestante = bestVoiture.getNombrePlaces() - mainReservation.getNombrePassager();
+
+                    // Chercher les réservations compatibles : dans [mainTime, mainTime + TA] et qui rentrent
+                    List<Reservation> fitted = new ArrayList<>();
+                    for (Reservation r : remaining) {
+                        java.sql.Timestamp rTime = r.getDateArriverAsTimestamp();
+                        boolean dansIntervalle = false;
+                        if (mainTime != null && rTime != null) {
+                            long diffMinutes = Math.abs(rTime.getTime() - mainTime.getTime()) / (60 * 1000);
+                            dansIntervalle = (diffMinutes <= (long) tempsAttente);
+                        } else {
+                            dansIntervalle = true;
+                        }
+
+                        if (dansIntervalle && r.getNombrePassager() <= capaciteRestante) {
+                            assignation.addReservation(r);
+                            capaciteRestante -= r.getNombrePassager();
+                            fitted.add(r);
+                        }
+                    }
+                    remaining.removeAll(fitted);
+
+                    // Retirer cette voiture de la liste des disponibles
+                    final int voitureId = bestVoiture.getId();
+                    voituresDisponibles.removeIf(v -> v.getId() == voitureId);
+                    voituresTriees.removeIf(v -> v.getId() == voitureId);
+                }
+
+                // Temps de départ = max dateArrivee du groupe (la voiture attend le dernier passager)
+                Reservation latest = assignation.getReservations().get(0);
+                for (Reservation r : assignation.getReservations()) {
+                    if (r.getDateArriverAsTimestamp() != null && latest.getDateArriverAsTimestamp() != null
+                            && r.getDateArriverAsTimestamp().after(latest.getDateArriverAsTimestamp())) {
+                        latest = r;
+                    }
+                }
+                assignation.setReservation(latest);
+
                 assignations.add(assignation);
-                
-                if (voitureAssignee != null) {
-                    voituresDisponibles.removeIf(v -> v.getId() == voitureAssignee.getId());
-                }
-            } else {
-                // Groupe de réservations à la même heure et minute
-                // Trier les réservations par nombre décroissant de passagers
-                group.sort((a, b) -> b.getNombrePassager() - a.getNombrePassager());
-                
-                // Trier les voitures disponibles par nombre décroissant de places
-                List<Voiture> voituresTriees = new ArrayList<>(voituresDisponibles);
-                voituresTriees.sort((a, b) -> b.getNombrePlaces() - a.getNombrePlaces());
-                
-                List<Reservation> remaining = new ArrayList<>(group);
-                
-                while (!remaining.isEmpty()) {
-                    // Prendre la première réservation (max passagers)
-                    Reservation mainReservation = remaining.get(0);
-                    
-                    // Trouver la voiture avec le max de places qui peut contenir au moins cette réservation
-                    Voiture bestVoiture = null;
-                  
-                    for (Voiture v : voituresTriees) {
-                        if (v.getNombrePlaces() >= mainReservation.getNombrePassager()) {
-                            bestVoiture = v;
-                            break;
-                        }
-                    }
-                    
-                    
-                    AssignationVoiture assignation = new AssignationVoiture(mainReservation, bestVoiture);
-                    remaining.remove(0);
-                    
-                    if (bestVoiture != null) {
-                        int capaciteRestante = bestVoiture.getNombrePlaces() - mainReservation.getNombrePassager();
-                        
-                        // Essayer de remplir la voiture avec d'autres réservations du groupe
-                        List<Reservation> fitted = new ArrayList<>();
-                        for (Reservation r : remaining) {
-                            if (r.getNombrePassager() <= capaciteRestante) {
-                                assignation.addReservation(r);
-                                capaciteRestante -= r.getNombrePassager();
-                                fitted.add(r);
-                            }
-                        }
-                        remaining.removeAll(fitted);
-                        
-                        // Retirer cette voiture de la liste des disponibles
-                        final int voitureId = bestVoiture.getId();
-                        voituresDisponibles.removeIf(v -> v.getId() == voitureId);
-                        voituresTriees.removeIf(v -> v.getId() == voitureId);
-                    }
-                    
-                    assignations.add(assignation);
-                }
             }
         }
 
         // Calculer l'itinéraire et l'heure de retour pour chaque assignation
-        Lieu aeroportGlobal = getAeroport(); // fallback si pas de lieu_atterissage sur la réservation
+        Lieu aeroportGlobal = getAeroport();
         List<Distance> allDistances = getAllDistances();
         double vitesse = getVitesseKmH();
 
         for (AssignationVoiture assignation : assignations) {
             if (assignation.hasVoiture()) {
-                // Utiliser l'aéroport spécifique de la réservation principale du groupe
                 Lieu aeroportLocal = (assignation.getReservation() != null
                         && assignation.getReservation().getLieuAtterissage() != null)
                         ? assignation.getReservation().getLieuAtterissage()
@@ -401,19 +428,8 @@ public class AssignationService {
                 computeItineraire(assignation, aeroportLocal, allDistances, vitesse);
             }
         }
-        
-        return assignations;
-    }
 
-    /**
-     * Extrait la clé date+heure+minute d'une réservation (format: "YYYY-MM-DD HH:MM")
-     */
-    private String getDateHourMinuteKey(Reservation r) {
-        String dateStr = r.getDateArriver();
-        String dateKey = (dateStr != null && dateStr.length() >= 16) ? dateStr.substring(0, 16) : (dateStr != null ? dateStr : "");
-        int aeroId = (r.getLieuAtterissage() != null && r.getLieuAtterissage().getId() != null)
-                     ? r.getLieuAtterissage().getId() : 0;
-        return dateKey + "_AERO_" + aeroId;
+        return assignations;
     }
 
     /**

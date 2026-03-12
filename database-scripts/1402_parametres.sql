@@ -1,7 +1,6 @@
 -- 1402_parametres.sql
 -- Create parametres table in dev schema and mirror into staging/prod, then insert initial values.
 
-\c voiture_reservation;
 
 CREATE TABLE IF NOT EXISTS dev.parametres (
     id SERIAL PRIMARY KEY,

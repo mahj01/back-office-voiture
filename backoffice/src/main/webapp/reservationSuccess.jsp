@@ -5,16 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Réservation Créée</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
         .success-container {
             background-color: white;
+            max-width: 600px;
+            margin: 20px auto;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -57,6 +54,8 @@
     </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 
 <div class="success-container">
     <div class="success-icon">✓</div>
@@ -70,6 +69,7 @@
     
     <a href="saisie" class="btn-back">Nouvelle Réservation</a>
 </div>
-
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

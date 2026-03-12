@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Supprimer voiture</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
 /* styles existants */
 form {
@@ -76,6 +78,8 @@ button:hover {
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/includes/sidebar.jsp" %>
+<div class="main-content">
 <h2>Confirmation suppression</h2>
 <%
     String id = request.getParameter("id");
@@ -86,5 +90,7 @@ button:hover {
     <button type="submit">Oui, supprimer</button>
     <a href="liste">Annuler</a>
 </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
