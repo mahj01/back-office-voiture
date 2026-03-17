@@ -67,12 +67,11 @@
         <div class="card-header <%= hasVoiture ? "bg-primary" : "bg-danger" %> text-white d-flex justify-content-between align-items-center">
             <div>
                 <i class="bi bi-car-front-fill"></i>
-                <strong>Voiture #<%= voitureIndex %></strong>
                 <% if (hasVoiture) { %>
-                    &mdash; <%= v.getMarque() %> <%= v.getModele() %>
                     <span class="badge bg-light text-dark ms-2"><%= v.getMatricule() %></span>
+                    &mdash; <%= v.getMarque() %> <%= v.getModele() %>
                 <% } else { %>
-                    &mdash; <em>Aucune voiture disponible</em>
+                     <em>Aucune voiture disponible</em> &mdash;
                 <% } %>
                 <%
                     Reservation mainRes = assignation.getReservation();
@@ -116,7 +115,6 @@
                 <table class="table table-sm table-bordered table-hover mb-3">
                     <thead class="table-light">
                         <tr>
-                            <th>#</th>
                             <th><i class="bi bi-person"></i> Client</th>
                             <th><i class="bi bi-people"></i> Passagers</th>
                             <th><i class="bi bi-geo-alt"></i> Lieu</th>
@@ -130,7 +128,6 @@
                             Lieu l = r.getLieu();
                     %>
                         <tr>
-                            <td><%= resIndex++ %></td>
                             <td>Client #<%= r.getIdClient() %></td>
                             <td><strong><%= r.getNombrePassager() %></strong></td>
                             <td><%= l != null ? l.getLibelle() : "N/A" %></td>
