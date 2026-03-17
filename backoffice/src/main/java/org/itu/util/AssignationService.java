@@ -508,51 +508,37 @@ public class AssignationService {
                     assignations.add(assignation);
                 } else {
                     // Aucune voiture disponible maintenant
-                    // RÈGLE: Si il y a d'autres réservations après, remettre ce groupe
-                    // dans remaining pour qu'il soit regroupé avec le prochain groupe
+                    // RÈGLE: Si il y a d'autres réservations HORS FENÊTRE après, remettre ce groupe
+                    // pour qu'il soit regroupé avec le prochain groupe naturel
                     // (pas de groupe spécial à l'heure de retour de la voiture)
 
-                    if (!remaining.isEmpty()) {
-                        // Il y a d'autres réservations après -> reporter au prochain groupe
-                        System.out.printf("[Report] Groupe de %d réservation(s) reporté au prochain groupe%n",
-                            groupe.size());
-
-                        // Remettre les réservations du groupe au début de remaining
-                        // pour qu'elles soient regroupées avec le prochain groupe
-                        remaining.addAll(0, groupe);
-
-                        // Retrier remaining par heure (la prochaine réservation originale devient la principale)
-                        remaining.sort((a, b) -> {
-                            String da = a.getDateArriver() != null ? a.getDateArriver() : "";
-                            String db2 = b.getDateArriver() != null ? b.getDateArriver() : "";
-                            return da.compareTo(db2);
-                        });
-
-                        // Retirer les réservations du groupe actuel (elles seront regroupées avec le prochain)
-                        // En fait, on les garde mais la prochaine itération va former un nouveau groupe
-                        // incluant la prochaine réservation (qui est hors fenêtre du groupe actuel)
-
-                        // Trouver la prochaine réservation hors de la fenêtre actuelle
-                        Reservation prochaineHorsFenetre = null;
-                        for (Reservation r : remaining) {
-                            Timestamp rTime = r.getDateArriverAsTimestamp();
-                            if (rTime != null && finFenetre != null && rTime.after(finFenetre)) {
-                                prochaineHorsFenetre = r;
-                                break;
-                            }
+                    // Trouver s'il existe une réservation hors de la fenêtre actuelle
+                    Reservation prochaineHorsFenetre = null;
+                    for (Reservation r : remaining) {
+                        Timestamp rTime = r.getDateArriverAsTimestamp();
+                        if (rTime != null && finFenetre != null && rTime.after(finFenetre)) {
+                            prochaineHorsFenetre = r;
+                            break;
                         }
+                    }
 
-                        if (prochaineHorsFenetre != null) {
-                            // Réorganiser remaining pour que la prochaine réservation hors fenêtre soit en tête
-                            remaining.remove(prochaineHorsFenetre);
-                            remaining.add(0, prochaineHorsFenetre);
-                        }
+                    if (prochaineHorsFenetre != null) {
+                        // Il y a une réservation hors fenêtre -> reporter au prochain groupe
+                        System.out.printf("[Report] Groupe de %d réservation(s) reporté au prochain groupe (à %s)%n",
+                            groupe.size(), prochaineHorsFenetre.getDateArriver());
+
+                        // Remettre les réservations du groupe dans remaining
+                        remaining.addAll(groupe);
+
+                        // Réorganiser remaining pour que la prochaine réservation hors fenêtre soit en tête
+                        remaining.remove(prochaineHorsFenetre);
+                        remaining.add(0, prochaineHorsFenetre);
 
                         // Continuer avec le prochain groupe
                         continue;
                     }
 
-                    // Plus de réservations après -> chercher la prochaine voiture disponible
+                    // Pas de réservation hors fenêtre -> chercher la prochaine voiture disponible
                     Voiture prochaineVoiture = trouverProchaineVoitureDisponible(totalPassagers);
 
                     if (prochaineVoiture != null && prochaineVoiture.getHeureRetourAeroport() != null) {
