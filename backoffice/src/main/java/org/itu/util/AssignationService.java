@@ -417,7 +417,20 @@ public class AssignationService {
                 }
 
                 // Trouver la meilleure voiture disponible
+                // On cherche d'abord une voiture pour le total des passagers
+                // Si pas trouvée, on cherche une voiture pour la plus grande réservation (prioritaire)
                 Voiture bestVoiture = trouverMeilleureVoitureDisponible(totalPassagers, heureArriveeMax);
+
+                // Si aucune voiture ne peut prendre tous les passagers, chercher une voiture
+                // pour la plus grande réservation (le premier après le tri décroissant)
+                if (bestVoiture == null && !groupe.isEmpty()) {
+                    int passagersMaxReservation = groupe.get(0).getNombrePassager();
+                    bestVoiture = trouverMeilleureVoitureDisponible(passagersMaxReservation, heureArriveeMax);
+                    if (bestVoiture != null) {
+                        System.out.printf("[Assignation partielle] Voiture %s peut prendre %d passagers (pas tous les %d)%n",
+                            bestVoiture.getMatricule(), bestVoiture.getNombrePlaces(), totalPassagers);
+                    }
+                }
 
                 if (bestVoiture != null) {
                     // Calculer l'heure de départ = max(heureArriveeMax, heureRetourVoiture)
