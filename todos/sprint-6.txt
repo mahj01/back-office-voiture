@@ -1,0 +1,42 @@
+Considération nombre trajet :
+    -On suppose que les voitures sont tous à l'aéroprt à 00:00:00(hypothèse)
+    -Un trajet veut dire : une voiture qui vient de aéroport -> hotel des client -> retour à l'aéroport
+    -Misy trajet vitann'ilay voiture fantatra we tafaverina izy à quelle heure
+        -Quand la voiture est revenue , elle peut être candidate pour l'assignation suivante à partir de son heure
+    -Règle ajouté :
+        -On va prendre en priorité avant la priorité de type de carburant le nombre de trajet fait par le voiture 
+            -Si voiture 1 a fait 2 trajet avec type de carburant essence et il y voiture 2 qui est diesel avec 3 trajet
+                => on va prendre en priorité la voiture 1 car il y fait moins de trajet que voiture 2 même si elles ont la même capacité de places
+                    , on va prendre en priorité qui a fait le moins de trajet . Si elle ont fait le même trajet , on continue comme avant de prendre en priorité diesel et ains de suite
+
+Exemple de scénario 1 :
+-Arrivé client 1 à l'aéroport : 8h00
+-> Il ne peut pas être assigné au voiture 
+-Arrivé client 2 à l'aéroport : 8h10
+->On voit une voiture
+-Arrivé client 3 à l'aéroport : 8h15
+->On voit une voiture
+-Arrivé client 3 à l'aéroport : 8h40
+Alors que temps attente = 30 minutes donc on même si on ne trouve pas une voiture pour le client du 8h00 , on doit juste
+faire le regroupement des clients jusqu'à 8h30 si il y en a donc ici on regroupe que jusqu'à 8h15 donc la voiture part à partir de 8h15.
+Pour le clietn à 8h40 , cela va être une autre regroupement à partir de 8h40 à 9h10 et ainsi de suite
+
+Cas 2 :
+Voiture 1 a une capacité de passagers 30 personnes mais il est parti de l'aéroport de 4h00 à 6h00
+Mais le client 1 a une personne à déposer de 28 personnes que seule la voiture 1 peut les déposer à 5h00
+Alors que nous n'avons pas trouver du voiture pour le client 1 à 5h00 car la voiture 1 n'est pas encore candidate dans cette heure là.
+Alors qu'on sait que voiture 1 va revenir à 6h00 donc à partir de 6h00 , cette voiture va être candidate.
+Par conséquent , on peut assigner client 1 à partir de 6h00 dans la voiture 1 car la voiture est devenue candidate.
+En resumé , après les trajets , on doit revérifier les reservations non assignées si il y a des voitures qui peut les emportés.
+
+
+Remarque :
+Une voiture disponible veut dire voiture qui n'est pas en trajet.
+Si une reservation a eu lieu à 8h00 , on a un temps d'attente 30 minutes 
+et si on a une voiture qui a fini un trajet à 8h25(retour à l'aéroport) donc il va être candidat pour la reservation de 8h.
+Si la voiture qui revienne à 8h25 est la voiture idéale pour le regoupement des reservations même si le départ des clients doit être à
+8h00 par exemple car c'est la seule reservation dans ce 30 minutes et on trouve que la voiture idéales est la voiture qui va arriver à 8h25 , 
+donc le départ doit être à 8h25 mais pas à 8h00
+
+Si une reservation à 8h00 n'est pas assignés alors qu'il y a une voiture qui est arrivé à 9h00 assignable à cette reservation
+alors que la reservation suivantes est 10h30 donc il doit attendre le regroupement de 10h mais pas faire une regroupement spéciale à 9h00

@@ -14,7 +14,9 @@ public class Voiture {
     private BigDecimal vitesseMoyenne;
     private BigDecimal tempAttente;
 
-    
+    // Champs runtime pour le suivi des trajets (non persistés en BDD)
+    private int nombreTrajets = 0;
+    private java.sql.Timestamp heureRetourAeroport = null; // null = disponible dès 00:00
 
     private DB db;
 
@@ -134,5 +136,40 @@ public class Voiture {
         } catch (java.sql.SQLException e) {
             System.out.println("Erreur lors de la mise à jour de la voiture : " + e.getMessage());
         }
+    }
+
+    // --- Méthodes pour le suivi des trajets (runtime) ---
+
+    public int getNombreTrajets() {
+        return nombreTrajets;
+    }
+
+    public void setNombreTrajets(int nombreTrajets) {
+        this.nombreTrajets = nombreTrajets;
+    }
+
+    public void incrementerTrajets() {
+        this.nombreTrajets++;
+    }
+
+    public java.sql.Timestamp getHeureRetourAeroport() {
+        return heureRetourAeroport;
+    }
+
+    public void setHeureRetourAeroport(java.sql.Timestamp heureRetourAeroport) {
+        this.heureRetourAeroport = heureRetourAeroport;
+    }
+
+    /**
+     * Vérifie si la voiture est disponible à une heure donnée.
+     * Une voiture est disponible si:
+     * - Elle n'a pas encore fait de trajet (heureRetourAeroport == null)
+     * - Ou si l'heure donnée est >= heureRetourAeroport
+     */
+    public boolean estDisponibleA(java.sql.Timestamp heure) {
+        if (heureRetourAeroport == null) {
+            return true; // Disponible dès le début
+        }
+        return heure != null && !heure.before(heureRetourAeroport);
     }
 }
