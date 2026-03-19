@@ -1,16 +1,20 @@
 package org.itu.entity;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Classe représentant l'assignation d'une voiture à une réservation
+ * Supporte la séparation des passagers d'un client entre plusieurs voitures
  */
 public class AssignationVoiture {
     private Reservation reservation;
     private Voiture voiture;
     private int ecartPlaces; // nombre_place - total passagers du groupe
     private List<Reservation> reservations; // toutes les réservations assignées à cette voiture
+    private Map<Integer, Integer> passagersParReservation; // nb passagers assignés par réservation (clé = ID réservation)
     private List<Lieu> lieux; // tous les lieux du groupe
     private List<Lieu> itineraire; // itinéraire ordonné (aéroport -> hotels -> aéroport)
     private List<Double> distancesParEtape; // distance de chaque tronçon (index i = step[i]→step[i+1])
@@ -22,6 +26,7 @@ public class AssignationVoiture {
 
     public AssignationVoiture() {
         this.reservations = new ArrayList<>();
+        this.passagersParReservation = new LinkedHashMap<>();
         this.lieux = new ArrayList<>();
         this.itineraire = new ArrayList<>();
         this.distancesParEtape = new ArrayList<>();
@@ -87,6 +92,7 @@ public class AssignationVoiture {
      */
     public void addReservation(Reservation r) {
         this.reservations.add(r);
+        this.passagersParReservation.put(r.getId(), r.getNombrePassager());
         if (r.getLieu() != null) {
             this.lieux.add(r.getLieu());
         }
@@ -94,12 +100,45 @@ public class AssignationVoiture {
     }
 
     /**
+     * Ajoute une réservation avec un nombre spécifique de passagers (séparation)
+     * @param r La réservation
+     * @param nombrePassagers Le nombre de passagers assignés à cette voiture
+     */
+    public void addReservationPartielle(Reservation r, int nombrePassagers) {
+        // Si la réservation est déjà dans la liste, mettre à jour le nombre de passagers
+        if (passagersParReservation.containsKey(r.getId())) {
+            passagersParReservation.put(r.getId(), passagersParReservation.get(r.getId()) + nombrePassagers);
+        } else {
+            this.reservations.add(r);
+            this.passagersParReservation.put(r.getId(), nombrePassagers);
+            if (r.getLieu() != null) {
+                this.lieux.add(r.getLieu());
+            }
+        }
+        calculateEcart();
+    }
+
+    /**
+     * Retourne le nombre de passagers assignés pour une réservation spécifique
+     */
+    public int getPassagersAssignes(Reservation r) {
+        return passagersParReservation.getOrDefault(r.getId(), 0);
+    }
+
+    /**
+     * Retourne le map des passagers par réservation
+     */
+    public Map<Integer, Integer> getPassagersParReservation() {
+        return passagersParReservation;
+    }
+
+    /**
      * Retourne le nombre total de passagers de toutes les réservations du groupe
      */
     public int getTotalPassagers() {
         int total = 0;
-        for (Reservation r : reservations) {
-            total += r.getNombrePassager();
+        for (Integer passagers : passagersParReservation.values()) {
+            total += passagers;
         }
         return total;
     }

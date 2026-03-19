@@ -126,10 +126,22 @@
                         int resIndex = 1;
                         for (Reservation r : groupReservations) {
                             Lieu l = r.getLieu();
+                            int passagersAssignes = assignation.getPassagersAssignes(r);
+                            int passagersTotal = r.getNombrePassager();
+                            boolean isPartiel = passagersAssignes < passagersTotal;
                     %>
                         <tr>
                             <td>Client #<%= r.getIdClient() %></td>
-                            <td><strong><%= r.getNombrePassager() %></strong></td>
+                            <td>
+                                <% if (isPartiel) { %>
+                                    <strong><%= passagersAssignes %></strong>/<%= passagersTotal %>
+                                    <span class="badge bg-warning text-dark ms-1" title="Assignation partielle">
+                                        <i class="bi bi-scissors"></i>
+                                    </span>
+                                <% } else { %>
+                                    <strong><%= passagersAssignes %></strong>
+                                <% } %>
+                            </td>
                             <td><%= l != null ? l.getLibelle() : "N/A" %></td>
                             <td><%= r.getDateArriver() != null && r.getDateArriver().length() >= 16 ? r.getDateArriver().substring(11, 16) : "N/A" %></td>
                         </tr>
