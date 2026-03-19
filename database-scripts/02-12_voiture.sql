@@ -4,7 +4,8 @@ CREATE TABLE voiture (
     marque VARCHAR(100) NOT NULL,
     model VARCHAR(100) NOT NULL,
     nombre_place INTEGER NOT NULL,
-    type_carburant VARCHAR(2) NOT NULL
+    type_carburant VARCHAR(2) NOT NULL,
+    depart_heure_disponibilite TIMESTAMP
 );
 INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant) VALUES
 ('1234AB', 'Toyota', 'Corolla', 5, 'G'),

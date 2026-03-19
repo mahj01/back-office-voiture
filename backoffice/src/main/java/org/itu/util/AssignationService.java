@@ -246,7 +246,7 @@ public class AssignationService {
      */
     public List<Voiture> getAllVoitures() {
         List<Voiture> voitures = new ArrayList<>();
-        String sql = "SELECT id, matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente FROM voiture ORDER BY nombre_place, type_carburant";
+        String sql = "SELECT id, matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente, depart_heure_disponibilite FROM voiture ORDER BY nombre_place, type_carburant";
         try (java.sql.Statement stmt = db.getConnection().createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -258,7 +258,8 @@ public class AssignationService {
                     rs.getInt("nombre_place"),
                     rs.getString("type_carburant"),
                     rs.getBigDecimal("vitesse_moyenne"),
-                    rs.getBigDecimal("temp_attente")
+                    rs.getBigDecimal("temp_attente"),
+                    rs.getTimestamp("depart_heure_disponibilite")
                 );
                 voitures.add(v);
             }
@@ -546,11 +547,9 @@ public class AssignationService {
                         }
                     }
 
-                    // Définir la réservation principale
-                    Reservation reservationDepart = cible;
-                    if (heureDepart != null && !heureDepart.equals(heureArriveeMax)) {
-                        reservationDepart.setDateArriver(heureDepart.toString());
-                    }
+                    // Définir une réservation principale dédiée au calcul horaire
+                    // (ne pas modifier la réservation originale du groupe)
+                    Reservation reservationDepart = buildReservationForDepart(cible, heureDepart);
                     assignation.setReservation(reservationDepart);
 
                     // Calculer l'itinéraire et l'heure de retour
@@ -678,5 +677,30 @@ public class AssignationService {
         }
 
         return prochaine;
+    }
+
+    /**
+     * Crée une copie légère de réservation pour porter l'heure de départ calculée
+     * sans modifier l'heure d'arrivée originale utilisée dans l'affichage.
+     */
+    private Reservation buildReservationForDepart(Reservation source, Timestamp heureDepart) {
+        if (source == null) {
+            return null;
+        }
+
+        Reservation copy = new Reservation(
+            source.getId(),
+            source.getIdClient(),
+            source.getDateArriverAsTimestamp(),
+            source.getNombrePassager(),
+            source.getLieu(),
+            source.getLieuAtterissage()
+        );
+
+        if (heureDepart != null) {
+            copy.setDateArriver(heureDepart.toString());
+        }
+
+        return copy;
     }
 }
