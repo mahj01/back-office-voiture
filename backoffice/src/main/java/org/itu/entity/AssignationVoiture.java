@@ -19,6 +19,7 @@ public class AssignationVoiture {
     private List<Lieu> itineraire; // itinéraire ordonné (aéroport -> hotels -> aéroport)
     private List<Double> distancesParEtape; // distance de chaque tronçon (index i = step[i]→step[i+1])
     private double distanceTotaleKm; // distance totale aller-retour en km
+    private String heureDepartAeroport; // heure de départ depuis l'aéroport
     private String heureRetourAeroport; // heure estimée de retour à l'aéroport
     private double vitesseKmH;       // vitesse utilisée pour le calcul (km/h)
     private double tempAttenteMin;   // temps d'attente par arrêt intermédiaire (min)
@@ -172,6 +173,14 @@ public class AssignationVoiture {
 
     public void setHeureRetourAeroport(String heureRetourAeroport) {
         this.heureRetourAeroport = heureRetourAeroport;
+    }
+
+    public String getHeureDepartAeroport() {
+        return heureDepartAeroport;
+    }
+
+    public void setHeureDepartAeroport(String heureDepartAeroport) {
+        this.heureDepartAeroport = heureDepartAeroport;
     }
 
     public List<Double> getDistancesParEtape() {

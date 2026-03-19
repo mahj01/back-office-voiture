@@ -194,10 +194,21 @@
                         <span class="text-muted">Itinéraire non disponible</span>
                     <% } %>
                 </div>
-                <!-- 4 cartes métriques -->
+                <!-- 5 cartes métriques -->
                 <div class="col-12">
-                    <div class="row g-2">
-                        <div class="col-6 col-md-3">
+                    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-2">
+                        <div class="col">
+                            <div class="card text-center p-2 border-dark-subtle h-100">
+                                <div class="small text-muted"><i class="bi bi-box-arrow-right"></i> Départ aéroport</div>
+                                <div class="fw-bold text-dark fs-5">
+                                    <% if (assignation.getHeureDepartAeroport() != null) { %>
+                                        <%= assignation.getHeureDepartAeroport() %>
+                                    <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
+                                </div>
+                                <div class="small text-muted">heure de départ</div>
+                            </div>
+                        </div>
+                        <div class="col">
                             <div class="card text-center p-2 border-primary h-100">
                                 <div class="small text-muted"><i class="bi bi-rulers"></i> Distance totale</div>
                                 <div class="fw-bold text-primary fs-5">
@@ -208,7 +219,7 @@
                                 <div class="small text-muted">aller-retour</div>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col">
                             <div class="card text-center p-2 border-info h-100">
                                 <div class="small text-muted"><i class="bi bi-speedometer2"></i> Vitesse moy.</div>
                                 <div class="fw-bold text-info fs-5">
@@ -218,7 +229,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col">
                             <div class="card text-center p-2 border-secondary h-100">
                                 <div class="small text-muted"><i class="bi bi-hourglass-split"></i> Durée trajet</div>
                                 <div class="fw-bold fs-5">
@@ -232,7 +243,7 @@
                                 <div class="small text-muted">durée de conduite</div>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col">
                             <div class="card text-center p-2 border-warning h-100">
                                 <div class="small text-muted"><i class="bi bi-clock-history"></i> Retour aéroport</div>
                                 <div class="fw-bold text-warning-emphasis fs-5">

@@ -483,6 +483,9 @@ public class AssignationService {
                     // Créer l'assignation et remplir la voiture avec la cible puis les suivants
                     AssignationVoiture assignation = new AssignationVoiture();
                     assignation.setVoiture(bestVoiture);
+                    if (heureDepart != null) {
+                        assignation.setHeureDepartAeroport(heureDepart.toString().substring(11, 16));
+                    }
                     int capaciteRestante = bestVoiture.getNombrePlaces();
 
                     // 1) D'abord la cible
