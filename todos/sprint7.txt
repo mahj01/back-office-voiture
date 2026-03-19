@@ -1,0 +1,4 @@
+Sprint 7:
+    TL: 3342
+    Developper 1: 3275
+    Developper 2: 3344

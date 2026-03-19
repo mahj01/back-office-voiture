@@ -1,7 +1,7 @@
 Sprint 5:
-    TL: 
-    Developper 1: 
-    Developper 2: 
+    TL: 3342
+    Developper 1: 3344
+    Developper 2: 3275
 
     MCD:
 
