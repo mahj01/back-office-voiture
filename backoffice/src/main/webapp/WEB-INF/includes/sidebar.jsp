@@ -8,7 +8,7 @@
     <div class="sidebar-header">
         <a href="<%= ctx %>/" class="sidebar-brand">
             <i class="bi bi-speedometer2"></i>
-            <b>3344 - 3275 - 3342</b>
+            <b style="font-size: x-large" >3344 - 3275 - 3342</b>
         </a>
     </div>
     <ul class="sidebar-nav">

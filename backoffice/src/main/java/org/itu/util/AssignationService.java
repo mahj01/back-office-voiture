@@ -22,8 +22,8 @@ import org.itu.entity.Voiture;
  * 1. nombrePlaces >= nombrePassagers
  * 2. Prioriser la voiture avec le moins de trajets effectués
  * 3. Prendre la voiture avec le moins d'écart de places
- * 4. Si égalité, prendre diesel (type_carburant = 'D')
- * 5. Si encore égalité, prendre au hasard
+ * 4. Si égalité, prioriser le plus petit nombre de places
+ * 5. Si encore égalité, prendre par ID (deterministe)
  * 6. Une voiture est disponible à partir de son heure de retour à l'aéroport
  * 7. L'heure de départ = max(heure arrivée dernier passager, heure retour voiture)
  */
@@ -643,7 +643,7 @@ public class AssignationService {
      * Trouve la meilleure voiture disponible à une heure donnée selon les règles:
      * 1. Capacité suffisante
      * 2. Disponible à l'heure demandée (heureRetour <= heureDepart)
-     * 3. Priorité: moins de trajets > moins d'écart de places > diesel > random
+    * 3. Priorité: moins de trajets > moins d'écart de places > moins de places > ID
      * @param excludeVoiture Voiture à exclure (par exemple la voiture courante en cours de remplissage)
      */
     private Voiture trouverMeilleureVoitureDisponible(int nombrePassagers, Timestamp heureDepart, Voiture excludeVoiture) {
@@ -676,13 +676,11 @@ public class AssignationService {
                 int cmpEcart = Integer.compare(ecartA, ecartB);
                 if (cmpEcart != 0) return cmpEcart;
 
-                // 3. Diesel préféré
-                boolean aDiesel = "D".equals(a.getTypeCarburant());
-                boolean bDiesel = "D".equals(b.getTypeCarburant());
-                if (aDiesel && !bDiesel) return -1;
-                if (!aDiesel && bDiesel) return 1;
+                // 3. Plus petite capacité en tie-break explicite
+                int cmpPlaces = Integer.compare(a.getNombrePlaces(), b.getNombrePlaces());
+                if (cmpPlaces != 0) return cmpPlaces;
 
-                // 4. Random (utiliser l'ID comme tie-breaker déterministe)
+                // 4. Tie-break déterministe
                 return Integer.compare(a.getId(), b.getId());
             }
         });
