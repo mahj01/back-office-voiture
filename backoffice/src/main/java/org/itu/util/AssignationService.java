@@ -434,11 +434,12 @@ public class AssignationService {
                         tempsAttente);
             }
 
-            List<Reservation> groupe = groupeData.reservations;
-            Map<Integer, Integer> passagersRestants = groupeData.passagersRestants;
-                Timestamp heureArriveeMax = groupeData.heureReference != null
+                List<Reservation> groupe = groupeData.reservations;
+                Map<Integer, Integer> passagersRestants = groupeData.passagersRestants;
+                Timestamp heureDisponibiliteReference = groupeData.heureReference != null
                     ? groupeData.heureReference
                     : trouverHeureArriveeMax(groupe);
+                Timestamp heureDepartReference = trouverHeureArriveeMax(groupe);
             boolean premiereAffectationDuGroupe = true;
 
                 System.out.printf("[Group] Groupe calcule: %d reservation(s), %d passager(s), backlog dans groupe=%d%n",
@@ -449,17 +450,17 @@ public class AssignationService {
             while (hasPassagersRestants(passagersRestants)) {
                 Reservation cible = premiereAffectationDuGroupe
                         ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
-                        : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureArriveeMax);
+                    : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
                 if (cible == null) {
                     break;
                 }
 
                 int passagersCible = passagersRestants.get(cible.getId());
-                Voiture bestVoiture = trouverMeilleureVoitureDisponible(passagersCible, heureArriveeMax, null);
+                Voiture bestVoiture = trouverMeilleureVoitureDisponible(passagersCible, heureDisponibiliteReference, null);
                 boolean cibleFullFitPossible = bestVoiture != null;
 
                 if (!cibleFullFitPossible) {
-                    bestVoiture = trouverMeilleureVoitureDisponible(1, heureArriveeMax, null);
+                    bestVoiture = trouverMeilleureVoitureDisponible(1, heureDisponibiliteReference, null);
                 }
 
                 if (bestVoiture == null) {
@@ -469,7 +470,7 @@ public class AssignationService {
                     break;
                 }
 
-                Timestamp heureDepart = calculerHeureDepart(heureArriveeMax, bestVoiture);
+                Timestamp heureDepart = calculerHeureDepart(heureDepartReference, bestVoiture);
                 AssignationVoiture assignation = new AssignationVoiture();
                 assignation.setVoiture(bestVoiture);
 
@@ -477,7 +478,7 @@ public class AssignationService {
                 capaciteRestante = assignerReservationCible(assignation, cible, passagersRestants, passagersCible,
                         capaciteRestante, cibleFullFitPossible, bestVoiture);
                 remplirVoitureAvecAutresReservations(assignation, groupe, passagersRestants,
-                    cible, capaciteRestante, heureArriveeMax, bestVoiture);
+                    cible, capaciteRestante, bestVoiture);
 
                 finaliserAssignation(assignation, bestVoiture, cible, heureDepart, aeroportGlobal, allDistances, vitesse);
                 bestVoiture.incrementerTrajets();
@@ -725,8 +726,8 @@ public class AssignationService {
         return heureRetourMin;
     }
 
-    private Reservation trouverReservationCibleMeilleurFit(List<Reservation> groupe,
-            Map<Integer, Integer> passagersRestants, Timestamp heureArriveeMax) {
+        private Reservation trouverReservationCibleMeilleurFit(List<Reservation> groupe,
+            Map<Integer, Integer> passagersRestants, Timestamp heureDisponibiliteReference) {
         Reservation meilleureReservation = null;
         int meilleurEcart = Integer.MAX_VALUE;
         int meilleursRestants = Integer.MAX_VALUE;
@@ -737,7 +738,7 @@ public class AssignationService {
                 continue;
             }
 
-            Voiture candidate = trouverMeilleureVoitureDisponible(restants, heureArriveeMax, null);
+            Voiture candidate = trouverMeilleureVoitureDisponible(restants, heureDisponibiliteReference, null);
             if (candidate == null) {
                 continue;
             }
@@ -796,7 +797,7 @@ public class AssignationService {
 
     private int remplirVoitureAvecAutresReservations(AssignationVoiture assignation, List<Reservation> groupe,
             Map<Integer, Integer> passagersRestants, Reservation cible, int capaciteRestante,
-            Timestamp heureArriveeMax, Voiture voitureCourante) {
+            Voiture voitureCourante) {
         if (capaciteRestante <= 0) {
             return capaciteRestante;
         }
@@ -810,15 +811,7 @@ public class AssignationService {
             }
 
             int restantsMeilleur = passagersRestants.get(meilleureReservation.getId());
-            Voiture fullFitForR = trouverMeilleureVoitureDisponible(restantsMeilleur, heureArriveeMax, voitureCourante);
-            int aAssigner = (fullFitForR != null)
-                    ? (restantsMeilleur <= capaciteRestante ? restantsMeilleur : 0)
-                    : Math.min(restantsMeilleur, capaciteRestante);
-
-            if (aAssigner <= 0) {
-                reservationsIgnoreesPourCetteVoiture.add(meilleureReservation.getId());
-                continue;
-            }
+            int aAssigner = Math.min(restantsMeilleur, capaciteRestante);
 
             assignation.addReservationPartielle(meilleureReservation, aAssigner);
             passagersRestants.put(meilleureReservation.getId(), restantsMeilleur - aAssigner);
