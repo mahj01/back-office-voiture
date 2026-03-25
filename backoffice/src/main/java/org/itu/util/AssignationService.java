@@ -45,12 +45,14 @@ public class AssignationService {
         private final List<Reservation> reservations;
         private final Map<Integer, Integer> passagersRestants;
         private final LinkedHashSet<Integer> reservationsEnAttente;
+        private final Timestamp heureReference;
 
         private GroupeReservation(List<Reservation> reservations, Map<Integer, Integer> passagersRestants,
-                LinkedHashSet<Integer> reservationsEnAttente) {
+                LinkedHashSet<Integer> reservationsEnAttente, Timestamp heureReference) {
             this.reservations = reservations;
             this.passagersRestants = passagersRestants;
             this.reservationsEnAttente = reservationsEnAttente;
+            this.heureReference = heureReference;
         }
     }
 
@@ -401,21 +403,23 @@ public class AssignationService {
 
         List<Reservation> remaining = new ArrayList<>(airportReservations);
         Map<Integer, ReservationEnAttente> reservationsEnAttente = new LinkedHashMap<>();
+        Timestamp derniereHeureRecompute = null;
 
         while (!remaining.isEmpty() || !reservationsEnAttente.isEmpty()) {
             GroupeReservation groupeData;
             if (!reservationsEnAttente.isEmpty()) {
-                Timestamp heureRetourVehicule = trouverProchaineHeureRetourVoiture();
+                Timestamp heureRetourVehicule = trouverProchaineHeureRetourVoitureApres(derniereHeureRecompute);
                 if (heureRetourVehicule == null) {
-                    heureRetourVehicule = trouverPremiereHeureRestante(remaining);
-                }
-                if (heureRetourVehicule == null) {
+                    System.out.printf("[Recompute] Aucun retour de vehicule apres %s, backlog=%d%n",
+                            derniereHeureRecompute != null ? derniereHeureRecompute.toString().substring(11, 16) : "debut",
+                            reservationsEnAttente.size());
                     break;
                 }
                 System.out.printf("[Recompute] Nouveau groupe autour du retour %s | backlog=%d | remaining=%d%n",
                         heureRetourVehicule.toString().substring(11, 16),
                         reservationsEnAttente.size(),
                         remaining.size());
+                derniereHeureRecompute = heureRetourVehicule;
                 groupeData = construireGroupeAutourDeRetour(heureRetourVehicule, remaining, reservationsEnAttente,
                         tempsAttente);
             } else {
@@ -432,7 +436,9 @@ public class AssignationService {
 
             List<Reservation> groupe = groupeData.reservations;
             Map<Integer, Integer> passagersRestants = groupeData.passagersRestants;
-            Timestamp heureArriveeMax = trouverHeureArriveeMax(groupe);
+                Timestamp heureArriveeMax = groupeData.heureReference != null
+                    ? groupeData.heureReference
+                    : trouverHeureArriveeMax(groupe);
             boolean premiereAffectationDuGroupe = true;
 
                 System.out.printf("[Group] Groupe calcule: %d reservation(s), %d passager(s), backlog dans groupe=%d%n",
@@ -573,7 +579,8 @@ public class AssignationService {
             mainReservation.getDateArriver() != null ? mainReservation.getDateArriver().substring(11, 16) : "?",
             groupe.size(),
             reservationsEnAttenteDansGroupe.size());
-        return new GroupeReservation(groupe, passagersRestants, reservationsEnAttenteDansGroupe);
+        return new GroupeReservation(groupe, passagersRestants, reservationsEnAttenteDansGroupe,
+            trouverHeureArriveeMax(groupe));
     }
 
     private GroupeReservation construireGroupeAutourDeRetour(Timestamp heureRetourVehicule, List<Reservation> remaining,
@@ -614,7 +621,8 @@ public class AssignationService {
             finFenetre.toString().substring(11, 16),
             groupe.size(),
             reservationsEnAttenteDansGroupe.size());
-        return new GroupeReservation(groupe, passagersRestants, reservationsEnAttenteDansGroupe);
+        return new GroupeReservation(groupe, passagersRestants, reservationsEnAttenteDansGroupe,
+            heureRetourVehicule);
     }
 
     private void trierGroupeParPassagersRestants(List<Reservation> groupe, Map<Integer, Integer> passagersRestants) {
@@ -700,26 +708,21 @@ public class AssignationService {
         return null;
     }
 
-    private Timestamp trouverProchaineHeureRetourVoiture() {
+    private Timestamp trouverProchaineHeureRetourVoitureApres(Timestamp apres) {
         Timestamp heureRetourMin = null;
         for (Voiture voiture : voituresDisponibles) {
-            if (voiture.getHeureRetourAeroport() != null
-                    && (heureRetourMin == null || voiture.getHeureRetourAeroport().before(heureRetourMin))) {
-                heureRetourMin = voiture.getHeureRetourAeroport();
+            Timestamp retour = voiture.getHeureRetourAeroport();
+            if (retour == null) {
+                continue;
+            }
+            if (apres != null && !retour.after(apres)) {
+                continue;
+            }
+            if (heureRetourMin == null || retour.before(heureRetourMin)) {
+                heureRetourMin = retour;
             }
         }
         return heureRetourMin;
-    }
-
-    private Timestamp trouverPremiereHeureRestante(List<Reservation> remaining) {
-        Timestamp premiere = null;
-        for (Reservation reservation : remaining) {
-            Timestamp rTime = reservation.getDateArriverAsTimestamp();
-            if (rTime != null && (premiere == null || rTime.before(premiere))) {
-                premiere = rTime;
-            }
-        }
-        return premiere;
     }
 
     private Reservation trouverReservationCibleMeilleurFit(List<Reservation> groupe,
