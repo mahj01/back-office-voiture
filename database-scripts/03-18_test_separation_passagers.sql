@@ -111,3 +111,8 @@ SELECT '=== RÉSULTAT ATTENDU (avec séparation des passagers) ===' AS info;
 SELECT 'v1 (8 places D): Client1(6 pass) + Client2(2/4 pass) = 8 passagers' AS attendu
 UNION ALL SELECT 'v2 (3 places E): Client2(2/4 pass) + Client3(1/3 pass) = 3 passagers'
 UNION ALL SELECT 'Non assignés: Client3(2/3 pass) - attente retour voiture';
+
+
+ALTER TABLE voiture
+ALTER COLUMN depart_heure_disponibilite
+SET DEFAULT '2026-03-18 00:00:00';
