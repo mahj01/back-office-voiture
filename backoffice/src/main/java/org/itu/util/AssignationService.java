@@ -447,7 +447,6 @@ public class AssignationService {
                 Timestamp heureDisponibiliteReference = groupeData.heureReference != null
                     ? groupeData.heureReference
                     : trouverHeureArriveeMax(groupe);
-                Timestamp heureDepartReference = trouverHeureArriveeMax(groupe);
             boolean premiereAffectationDuGroupe = true;
             Reservation reservationPrioritaireEnCours = null;
 
@@ -497,7 +496,6 @@ public class AssignationService {
                     continue;
                 }
 
-                Timestamp heureDepart = calculerHeureDepart(heureDepartReference, bestVoiture);
                 AssignationVoiture assignation = new AssignationVoiture();
                 assignation.setVoiture(bestVoiture);
 
@@ -506,6 +504,8 @@ public class AssignationService {
                         capaciteRestante, cibleFullFitPossible, bestVoiture);
                 remplirVoitureAvecAutresReservations(assignation, groupe, passagersRestants,
                     cible, capaciteRestante, bestVoiture);
+
+                Timestamp heureDepart = calculerHeureDepart(assignation, bestVoiture);
 
                 finaliserAssignation(assignation, bestVoiture, cible, heureDepart, aeroportGlobal, allDistances, vitesse);
                 bestVoiture.incrementerTrajets();
@@ -933,14 +933,28 @@ public class AssignationService {
         }
     }
 
-    private Timestamp calculerHeureDepart(Timestamp heureArriveeMax, Voiture voiture) {
-        Timestamp heureDepart = heureArriveeMax;
-        if (voiture != null && voiture.getHeureRetourAeroport() != null) {
-            if (heureDepart == null || voiture.getHeureRetourAeroport().after(heureDepart)) {
-                heureDepart = voiture.getHeureRetourAeroport();
-            }
+    private Timestamp calculerHeureDepart(AssignationVoiture assignation, Voiture voiture) {
+        Timestamp heureDepart = trouverHeureArriveeMax(assignation != null ? assignation.getReservations() : null);
+        Timestamp disponibiliteVoiture = trouverHeureDisponibiliteCourante(voiture);
+
+        if (disponibiliteVoiture != null && (heureDepart == null || disponibiliteVoiture.after(heureDepart))) {
+            heureDepart = disponibiliteVoiture;
         }
+
         return heureDepart;
+    }
+
+    private Timestamp trouverHeureDisponibiliteCourante(Voiture voiture) {
+        if (voiture == null) {
+            return null;
+        }
+
+        Timestamp disponibilite = voiture.getDepartHeureDisponibilite();
+        Timestamp retour = voiture.getHeureRetourAeroport();
+        if (retour != null && (disponibilite == null || retour.after(disponibilite))) {
+            disponibilite = retour;
+        }
+        return disponibilite;
     }
 
     private void finaliserAssignation(AssignationVoiture assignation, Voiture voiture, Reservation cible,
