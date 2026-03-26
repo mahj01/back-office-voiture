@@ -441,6 +441,7 @@ public class AssignationService {
                     : trouverHeureArriveeMax(groupe);
                 Timestamp heureDepartReference = trouverHeureArriveeMax(groupe);
             boolean premiereAffectationDuGroupe = true;
+            Reservation reservationPrioritaireEnCours = null;
 
                 System.out.printf("[Group] Groupe calcule: %d reservation(s), %d passager(s), backlog dans groupe=%d%n",
                     groupe.size(),
@@ -448,9 +449,22 @@ public class AssignationService {
                     groupeData.reservationsEnAttente.size());
 
             while (hasPassagersRestants(passagersRestants)) {
-                Reservation cible = premiereAffectationDuGroupe
-                        ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
-                    : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
+                Reservation cible;
+                if (reservationPrioritaireEnCours != null) {
+                    Integer restantsPrioritaires = passagersRestants.get(reservationPrioritaireEnCours.getId());
+                    if (restantsPrioritaires != null && restantsPrioritaires > 0) {
+                        cible = reservationPrioritaireEnCours;
+                    } else {
+                        reservationPrioritaireEnCours = null;
+                        cible = premiereAffectationDuGroupe
+                                ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
+                                : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
+                    }
+                } else {
+                    cible = premiereAffectationDuGroupe
+                            ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
+                            : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
+                }
                 if (cible == null) {
                     break;
                 }
@@ -486,6 +500,11 @@ public class AssignationService {
                         bestVoiture.getMatricule(), bestVoiture.getNombreTrajets());
 
                 assignations.add(assignation);
+                if (passagersRestants.getOrDefault(cible.getId(), 0) > 0) {
+                    reservationPrioritaireEnCours = cible;
+                } else if (reservationPrioritaireEnCours != null && reservationPrioritaireEnCours.getId() == cible.getId()) {
+                    reservationPrioritaireEnCours = null;
+                }
                 premiereAffectationDuGroupe = false;
             }
         }
@@ -729,8 +748,8 @@ public class AssignationService {
         private Reservation trouverReservationCibleMeilleurFit(List<Reservation> groupe,
             Map<Integer, Integer> passagersRestants, Timestamp heureDisponibiliteReference) {
         Reservation meilleureReservation = null;
+            int meilleursRestants = Integer.MIN_VALUE;
         int meilleurEcart = Integer.MAX_VALUE;
-        int meilleursRestants = Integer.MAX_VALUE;
 
         for (Reservation reservation : groupe) {
             Integer restants = passagersRestants.get(reservation.getId());
@@ -739,33 +758,14 @@ public class AssignationService {
             }
 
             Voiture candidate = trouverMeilleureVoitureDisponible(restants, heureDisponibiliteReference, null);
-            if (candidate == null) {
-                continue;
-            }
-
-            int ecart = candidate.getNombrePlaces() - restants;
-            if (ecart < meilleurEcart
-                    || (ecart == meilleurEcart && restants < meilleursRestants)
-                    || (ecart == meilleurEcart && restants == meilleursRestants
-                            && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
+                int ecart = candidate != null ? candidate.getNombrePlaces() - restants : Integer.MAX_VALUE;
+                if (restants > meilleursRestants
+                        || (restants == meilleursRestants && ecart < meilleurEcart)
+                        || (restants == meilleursRestants && ecart == meilleurEcart
+                                && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
                 meilleureReservation = reservation;
-                meilleurEcart = ecart;
                 meilleursRestants = restants;
-            }
-        }
-
-        if (meilleureReservation != null) {
-            return meilleureReservation;
-        }
-
-        for (Reservation reservation : groupe) {
-            Integer restants = passagersRestants.get(reservation.getId());
-            if (restants != null && restants > 0) {
-                if (meilleureReservation == null || restants > meilleursRestants
-                        || (restants == meilleursRestants && reservation.getId() < meilleureReservation.getId())) {
-                    meilleureReservation = reservation;
-                    meilleursRestants = restants;
-                }
+                meilleurEcart = ecart;
             }
         }
 
@@ -834,8 +834,8 @@ public class AssignationService {
             Map<Integer, Integer> passagersRestants, Reservation cible, List<Integer> reservationsIgnoreesPourCetteVoiture,
             int capaciteRestante) {
         Reservation meilleureReservation = null;
-        int restantsMeilleur = 0;
         int meilleurEcart = Integer.MAX_VALUE;
+        int restantsMeilleur = Integer.MIN_VALUE;
 
         for (Reservation reservation : groupe) {
             if (reservation.getId() == cible.getId()) {
@@ -852,11 +852,11 @@ public class AssignationService {
 
             int ecart = Math.abs(restants - capaciteRestante);
             if (ecart < meilleurEcart
-                    || (ecart == meilleurEcart && restants < restantsMeilleur)
+                    || (ecart == meilleurEcart && restants > restantsMeilleur)
                     || (ecart == meilleurEcart && restants == restantsMeilleur
-                            && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
-                meilleurEcart = ecart;
+                        && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
                 meilleureReservation = reservation;
+                meilleurEcart = ecart;
                 restantsMeilleur = restants;
             }
         }
@@ -989,7 +989,7 @@ public class AssignationService {
 
         boolean dieselDisponible = false;
         for (Voiture voiture : meilleuresSelonEcart) {
-            if ("D".equals(voiture.getTypeCarburant())) {
+            if (estVoitureDiesel(voiture)) {
                 dieselDisponible = true;
                 break;
             }
@@ -998,7 +998,7 @@ public class AssignationService {
         List<Voiture> finales = new ArrayList<>();
         if (dieselDisponible) {
             for (Voiture voiture : meilleuresSelonEcart) {
-                if ("D".equals(voiture.getTypeCarburant())) {
+                if (estVoitureDiesel(voiture)) {
                     finales.add(voiture);
                 }
             }
@@ -1011,6 +1011,15 @@ public class AssignationService {
         }
 
         return finales.get(ThreadLocalRandom.current().nextInt(finales.size()));
+    }
+
+    private boolean estVoitureDiesel(Voiture voiture) {
+        if (voiture == null || voiture.getTypeCarburant() == null) {
+            return false;
+        }
+
+        String typeCarburant = voiture.getTypeCarburant().trim().toUpperCase();
+        return "D".equals(typeCarburant) || "DIESEL".equals(typeCarburant);
     }
 
     /**
