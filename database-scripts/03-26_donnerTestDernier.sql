@@ -52,10 +52,10 @@ INSERT INTO voiture (
     type_carburant,
     depart_heure_disponibilite
 ) VALUES
-('vehicule1', 'N/A', 'N/A', 5,  'D', '2026-03-19 00:00:00'),
-('vehicule2', 'N/A', 'N/A', 5,  'E', '2026-03-19 00:00:00'),
+('vehicule1', 'N/A', 'N/A', 5,  'D', '2026-03-19 09:00:00'),
+('vehicule2', 'N/A', 'N/A', 5,  'E', '2026-03-19 09:00:00'),
 ('vehicule3', 'N/A', 'N/A', 12, 'D', '2026-03-19 00:00:00'),
-('vehicule4', 'N/A', 'N/A', 9,  'D', '2026-03-19 00:00:00'),
+('vehicule4', 'N/A', 'N/A', 9,  'D', '2026-03-19 09:00:00'),
 ('vehicule5', 'N/A', 'N/A', 12, 'E', '2026-03-19 13:00:00');
 
 -- 6) Reservations (date image: 19/03/26)
