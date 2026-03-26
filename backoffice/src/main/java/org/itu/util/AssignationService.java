@@ -481,7 +481,7 @@ public class AssignationService {
                 boolean cibleFullFitPossible = bestVoiture != null;
 
                 if (!cibleFullFitPossible) {
-                    bestVoiture = trouverMeilleureVoitureDisponible(1, heureDisponibiliteReference, null);
+                    bestVoiture = trouverMeilleureVoiturePourCible(passagersCible, heureDisponibiliteReference, null);
                 }
 
                 if (bestVoiture == null) {
@@ -1047,6 +1047,75 @@ public class AssignationService {
         List<Voiture> meilleuresSelonEcart = new ArrayList<>();
         for (Voiture voiture : meilleuresVoitures) {
             if (voiture.getNombrePlaces() - nombrePassagers == minEcart) {
+                meilleuresSelonEcart.add(voiture);
+            }
+        }
+
+        boolean dieselDisponible = false;
+        for (Voiture voiture : meilleuresSelonEcart) {
+            if (estVoitureDiesel(voiture)) {
+                dieselDisponible = true;
+                break;
+            }
+        }
+
+        List<Voiture> finales = new ArrayList<>();
+        if (dieselDisponible) {
+            for (Voiture voiture : meilleuresSelonEcart) {
+                if (estVoitureDiesel(voiture)) {
+                    finales.add(voiture);
+                }
+            }
+        } else {
+            finales.addAll(meilleuresSelonEcart);
+        }
+
+        if (finales.isEmpty()) {
+            return null;
+        }
+
+        return finales.get(ThreadLocalRandom.current().nextInt(finales.size()));
+    }
+
+    private Voiture trouverMeilleureVoiturePourCible(int nombrePassagers, Timestamp heureDepart, Voiture excludeVoiture) {
+        List<Voiture> candidates = new ArrayList<>();
+
+        for (Voiture voiture : voituresDisponibles) {
+            if (excludeVoiture != null && voiture.getId() == excludeVoiture.getId()) {
+                continue;
+            }
+            if (voiture.getNombrePlaces() >= 1 && voiture.estDisponibleA(heureDepart)) {
+                candidates.add(voiture);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return null;
+        }
+
+        int minTrajets = Integer.MAX_VALUE;
+        for (Voiture voiture : candidates) {
+            minTrajets = Math.min(minTrajets, voiture.getNombreTrajets());
+        }
+
+        List<Voiture> meilleuresVoitures = new ArrayList<>();
+        for (Voiture voiture : candidates) {
+            if (voiture.getNombreTrajets() == minTrajets) {
+                meilleuresVoitures.add(voiture);
+            }
+        }
+
+        int meilleurEcart = Integer.MAX_VALUE;
+        for (Voiture voiture : meilleuresVoitures) {
+            int ecart = Math.abs(voiture.getNombrePlaces() - nombrePassagers);
+            if (ecart < meilleurEcart) {
+                meilleurEcart = ecart;
+            }
+        }
+
+        List<Voiture> meilleuresSelonEcart = new ArrayList<>();
+        for (Voiture voiture : meilleuresVoitures) {
+            if (Math.abs(voiture.getNombrePlaces() - nombrePassagers) == meilleurEcart) {
                 meilleuresSelonEcart.add(voiture);
             }
         }
