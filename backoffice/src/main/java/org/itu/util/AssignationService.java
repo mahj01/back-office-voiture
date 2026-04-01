@@ -447,31 +447,14 @@ public class AssignationService {
                 Timestamp heureDisponibiliteReference = groupeData.heureReference != null
                     ? groupeData.heureReference
                     : trouverHeureArriveeMax(groupe);
-            boolean premiereAffectationDuGroupe = true;
-            Reservation reservationPrioritaireEnCours = null;
-
                 System.out.printf("[Group] Groupe calcule: %d reservation(s), %d passager(s), backlog dans groupe=%d%n",
                     groupe.size(),
                     getTotalPassagersRestants(passagersRestants),
                     groupeData.reservationsEnAttente.size());
 
             while (hasPassagersRestants(passagersRestants)) {
-                Reservation cible;
-                if (reservationPrioritaireEnCours != null) {
-                    Integer restantsPrioritaires = passagersRestants.get(reservationPrioritaireEnCours.getId());
-                    if (restantsPrioritaires != null && restantsPrioritaires > 0) {
-                        cible = reservationPrioritaireEnCours;
-                    } else {
-                        reservationPrioritaireEnCours = null;
-                        cible = premiereAffectationDuGroupe
-                                ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
-                                : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
-                    }
-                } else {
-                    cible = premiereAffectationDuGroupe
-                            ? trouverReservationCibleInitiale(groupe, passagersRestants, groupeData.reservationsEnAttente)
-                            : trouverReservationCibleMeilleurFit(groupe, passagersRestants, heureDisponibiliteReference);
-                }
+                Reservation cible = trouverReservationCibleMeilleurFit(groupe, passagersRestants,
+                        groupeData.reservationsEnAttente, heureDisponibiliteReference);
                 if (cible == null) {
                     break;
                 }
@@ -489,10 +472,6 @@ public class AssignationService {
                             cible.getIdClient(), passagersCible);
                     reservationsEnAttente.put(cible.getId(), new ReservationEnAttente(cible, passagersCible));
                     passagersRestants.put(cible.getId(), 0);
-                    if (reservationPrioritaireEnCours != null && reservationPrioritaireEnCours.getId() == cible.getId()) {
-                        reservationPrioritaireEnCours = null;
-                    }
-                    premiereAffectationDuGroupe = false;
                     continue;
                 }
 
@@ -513,12 +492,6 @@ public class AssignationService {
                         bestVoiture.getMatricule(), bestVoiture.getNombreTrajets());
 
                 assignations.add(assignation);
-                if (passagersRestants.getOrDefault(cible.getId(), 0) > 0) {
-                    reservationPrioritaireEnCours = cible;
-                } else if (reservationPrioritaireEnCours != null && reservationPrioritaireEnCours.getId() == cible.getId()) {
-                    reservationPrioritaireEnCours = null;
-                }
-                premiereAffectationDuGroupe = false;
             }
         }
 
@@ -557,9 +530,9 @@ public class AssignationService {
     private Reservation extraireReservationPrioritaire(List<Reservation> remaining,
             Map<Integer, ReservationEnAttente> reservationsEnAttente) {
         if (!reservationsEnAttente.isEmpty()) {
-            Integer firstPendingId = reservationsEnAttente.keySet().iterator().next();
-            ReservationEnAttente enAttente = reservationsEnAttente.remove(firstPendingId);
-            return enAttente != null ? enAttente.reservation : null;
+            ReservationEnAttente enAttente = trierReservationsEnAttente(reservationsEnAttente).get(0);
+            reservationsEnAttente.remove(enAttente.reservation.getId());
+            return enAttente.reservation;
         }
 
         if (remaining.isEmpty()) {
@@ -585,7 +558,7 @@ public class AssignationService {
 
         List<Reservation> aRetirer = new ArrayList<>();
         List<Reservation> candidats = new ArrayList<>();
-        for (ReservationEnAttente enAttente : reservationsEnAttente.values()) {
+        for (ReservationEnAttente enAttente : trierReservationsEnAttente(reservationsEnAttente)) {
             candidats.add(enAttente.reservation);
         }
         candidats.addAll(remaining);
@@ -623,15 +596,18 @@ public class AssignationService {
         LinkedHashSet<Integer> reservationsEnAttenteDansGroupe = new LinkedHashSet<>();
         List<Integer> backlogAbsorbe = new ArrayList<>();
 
-        for (ReservationEnAttente enAttente : reservationsEnAttente.values()) {
+        for (ReservationEnAttente enAttente : trierReservationsEnAttente(reservationsEnAttente)) {
             groupe.add(enAttente.reservation);
             passagersRestants.put(enAttente.reservation.getId(), enAttente.passagersRestants);
             reservationsEnAttenteDansGroupe.add(enAttente.reservation.getId());
             backlogAbsorbe.add(enAttente.reservation.getId());
         }
 
-        Timestamp debutFenetre = new Timestamp(heureRetourVehicule.getTime() - (long) (tempsAttente * 60 * 1000));
-        Timestamp finFenetre = new Timestamp(heureRetourVehicule.getTime() + (long) (tempsAttente * 60 * 1000));
+        Timestamp debutFenetre = trouverHeureArriveeMinBacklog(reservationsEnAttente);
+        if (debutFenetre == null) {
+            debutFenetre = new Timestamp(heureRetourVehicule.getTime() - (long) (tempsAttente * 60 * 1000));
+        }
+        Timestamp finFenetre = heureRetourVehicule;
 
         List<Reservation> aRetirer = new ArrayList<>();
         for (Reservation reservation : remaining) {
@@ -639,6 +615,9 @@ public class AssignationService {
             if (rTime != null && !rTime.before(debutFenetre) && !rTime.after(finFenetre)) {
                 groupe.add(reservation);
                 passagersRestants.put(reservation.getId(), reservation.getNombrePassager());
+                if (rTime.before(heureRetourVehicule)) {
+                    reservationsEnAttenteDansGroupe.add(reservation.getId());
+                }
                 aRetirer.add(reservation);
             }
         }
@@ -664,21 +643,17 @@ public class AssignationService {
             boolean aEnAttente = reservationsEnAttenteDansGroupe.contains(a.getId());
             boolean bEnAttente = reservationsEnAttenteDansGroupe.contains(b.getId());
 
-            if (aEnAttente && bEnAttente) {
-                return Integer.compare(positionDansEnAttente(reservationsEnAttenteDansGroupe, a.getId()),
-                        positionDansEnAttente(reservationsEnAttenteDansGroupe, b.getId()));
-            }
-            if (aEnAttente) {
-                return -1;
-            }
-            if (bEnAttente) {
-                return 1;
+            if (aEnAttente != bEnAttente) {
+                return aEnAttente ? -1 : 1;
             }
 
-            int restantsA = passagersRestants.getOrDefault(a.getId(), a.getNombrePassager());
-            int restantsB = passagersRestants.getOrDefault(b.getId(), b.getNombrePassager());
+            if (!aEnAttente && !bEnAttente) {
+                return 0;
+            }
 
-            int cmpRestants = Integer.compare(restantsB, restantsA);
+            int cmpRestants = Integer.compare(
+                    passagersRestants.getOrDefault(b.getId(), b.getNombrePassager()),
+                    passagersRestants.getOrDefault(a.getId(), a.getNombrePassager()));
             if (cmpRestants != 0) {
                 return cmpRestants;
             }
@@ -700,15 +675,41 @@ public class AssignationService {
         });
     }
 
-    private int positionDansEnAttente(LinkedHashSet<Integer> reservationsEnAttenteDansGroupe, Integer reservationId) {
-        int position = 0;
-        for (Integer id : reservationsEnAttenteDansGroupe) {
-            if (id.equals(reservationId)) {
-                return position;
+    private Timestamp trouverHeureArriveeMinBacklog(Map<Integer, ReservationEnAttente> reservationsEnAttente) {
+        Timestamp heureArriveeMin = null;
+        for (ReservationEnAttente enAttente : reservationsEnAttente.values()) {
+            Timestamp rTime = enAttente.reservation.getDateArriverAsTimestamp();
+            if (rTime != null && (heureArriveeMin == null || rTime.before(heureArriveeMin))) {
+                heureArriveeMin = rTime;
             }
-            position++;
         }
-        return Integer.MAX_VALUE;
+        return heureArriveeMin;
+    }
+
+    private List<ReservationEnAttente> trierReservationsEnAttente(Map<Integer, ReservationEnAttente> reservationsEnAttente) {
+        List<ReservationEnAttente> triees = new ArrayList<>(reservationsEnAttente.values());
+        triees.sort((a, b) -> {
+            int cmpPassagers = Integer.compare(b.passagersRestants, a.passagersRestants);
+            if (cmpPassagers != 0) {
+                return cmpPassagers;
+            }
+
+            Timestamp ta = a.reservation.getDateArriverAsTimestamp();
+            Timestamp tb = b.reservation.getDateArriverAsTimestamp();
+            if (ta != null && tb != null) {
+                int cmpTemps = ta.compareTo(tb);
+                if (cmpTemps != 0) {
+                    return cmpTemps;
+                }
+            } else if (ta == null && tb != null) {
+                return 1;
+            } else if (ta != null && tb == null) {
+                return -1;
+            }
+
+            return Integer.compare(a.reservation.getId(), b.reservation.getId());
+        });
+        return triees;
     }
 
     private Timestamp trouverHeureArriveeMax(List<Reservation> groupe) {
@@ -739,24 +740,6 @@ public class AssignationService {
         return reservation.getNombrePassager();
     }
 
-    private Reservation trouverReservationCibleInitiale(List<Reservation> groupe,
-            Map<Integer, Integer> passagersRestants, LinkedHashSet<Integer> reservationsEnAttenteDansGroupe) {
-        for (Reservation reservation : groupe) {
-            Integer restants = passagersRestants.get(reservation.getId());
-            if (restants != null && restants > 0 && reservationsEnAttenteDansGroupe.contains(reservation.getId())) {
-                return reservation;
-            }
-        }
-
-        for (Reservation reservation : groupe) {
-            Integer restants = passagersRestants.get(reservation.getId());
-            if (restants != null && restants > 0) {
-                return reservation;
-            }
-        }
-        return null;
-    }
-
     private Timestamp trouverProchaineHeureRetourVoitureApres(Timestamp apres) {
         Timestamp heureRetourMin = null;
         for (Voiture voiture : voituresDisponibles) {
@@ -764,7 +747,7 @@ public class AssignationService {
             if (retour == null) {
                 continue;
             }
-            if (apres != null && !retour.after(apres)) {
+            if (apres != null && retour.before(apres)) {
                 continue;
             }
             if (heureRetourMin == null || retour.before(heureRetourMin)) {
@@ -785,7 +768,7 @@ public class AssignationService {
             if (disponibilite == null) {
                 continue;
             }
-            if (apres != null && !disponibilite.after(apres)) {
+            if (apres != null && disponibilite.before(apres)) {
                 continue;
             }
             if (heureDisponibiliteMin == null || disponibilite.before(heureDisponibiliteMin)) {
@@ -796,10 +779,20 @@ public class AssignationService {
     }
 
         private Reservation trouverReservationCibleMeilleurFit(List<Reservation> groupe,
-            Map<Integer, Integer> passagersRestants, Timestamp heureDisponibiliteReference) {
+            Map<Integer, Integer> passagersRestants, LinkedHashSet<Integer> reservationsEnAttenteDansGroupe,
+            Timestamp heureDisponibiliteReference) {
         Reservation meilleureReservation = null;
-            int meilleursRestants = Integer.MIN_VALUE;
+        int meilleursRestants = Integer.MIN_VALUE;
         int meilleurEcart = Integer.MAX_VALUE;
+        boolean backlogPresent = false;
+
+        for (Reservation reservation : groupe) {
+            Integer restants = passagersRestants.get(reservation.getId());
+            if (restants != null && restants > 0 && reservationsEnAttenteDansGroupe.contains(reservation.getId())) {
+                backlogPresent = true;
+                break;
+            }
+        }
 
         for (Reservation reservation : groupe) {
             Integer restants = passagersRestants.get(reservation.getId());
@@ -807,12 +800,16 @@ public class AssignationService {
                 continue;
             }
 
+            if (backlogPresent && !reservationsEnAttenteDansGroupe.contains(reservation.getId())) {
+                continue;
+            }
+
             Voiture candidate = trouverMeilleureVoitureDisponible(restants, heureDisponibiliteReference, null);
-                int ecart = candidate != null ? candidate.getNombrePlaces() - restants : Integer.MAX_VALUE;
-                if (restants > meilleursRestants
-                        || (restants == meilleursRestants && ecart < meilleurEcart)
-                        || (restants == meilleursRestants && ecart == meilleurEcart
-                                && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
+            int ecart = candidate != null ? candidate.getNombrePlaces() - restants : Integer.MAX_VALUE;
+            if (restants > meilleursRestants
+                    || (restants == meilleursRestants && ecart < meilleurEcart)
+                    || (restants == meilleursRestants && ecart == meilleurEcart
+                            && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
                 meilleureReservation = reservation;
                 meilleursRestants = restants;
                 meilleurEcart = ecart;
