@@ -452,9 +452,22 @@ public class AssignationService {
                     getTotalPassagersRestants(passagersRestants),
                     groupeData.reservationsEnAttente.size());
 
+            Reservation reservationPrioritaireEnCours = null;
+
             while (hasPassagersRestants(passagersRestants)) {
-                Reservation cible = trouverReservationCibleMeilleurFit(groupe, passagersRestants,
-                        groupeData.reservationsEnAttente, heureDisponibiliteReference);
+                Reservation cible = reservationPrioritaireEnCours;
+                if (cible != null) {
+                    Integer restantsPrioritaires = passagersRestants.get(cible.getId());
+                    if (restantsPrioritaires == null || restantsPrioritaires <= 0) {
+                        reservationPrioritaireEnCours = null;
+                        cible = null;
+                    }
+                }
+
+                if (cible == null) {
+                    cible = trouverReservationCibleMeilleurFit(groupe, passagersRestants,
+                            groupeData.reservationsEnAttente, heureDisponibiliteReference);
+                }
                 if (cible == null) {
                     break;
                 }
@@ -492,6 +505,12 @@ public class AssignationService {
                         bestVoiture.getMatricule(), bestVoiture.getNombreTrajets());
 
                 assignations.add(assignation);
+
+                if (passagersRestants.getOrDefault(cible.getId(), 0) > 0) {
+                    reservationPrioritaireEnCours = cible;
+                } else if (reservationPrioritaireEnCours != null && reservationPrioritaireEnCours.getId() == cible.getId()) {
+                    reservationPrioritaireEnCours = null;
+                }
             }
         }
 
