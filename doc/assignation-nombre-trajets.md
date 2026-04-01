@@ -29,7 +29,7 @@ L'algorithme gère maintenant:
 | RG-A9 | **Meilleur fit sur le vrai besoin** | Si aucune voiture ne peut couvrir complètement la réservation, le véhicule est quand même choisi en comparant sa capacité au nombre de passagers réels de la réservation, pas à `1`. |
 | RG-A10 | **Split autorisé** | Une réservation peut être répartie sur plusieurs voitures si sa taille dépasse la capacité du véhicule ou si cela permet d'optimiser le remplissage. |
 | RG-A11 | **Remplissage complémentaire** | Après la réservation cible, la voiture est complétée avec d'autres réservations du groupe via un best-fit sur la capacité restante. |
-| RG-A12 | **Ordre du filler** | Le filler choisit la réservation la plus proche de la capacité restante sans réordonner les réservations fraîches déjà présentes dans le groupe. |
+| RG-A12 | **Ordre du filler** | Le filler choisit la réservation la plus proche de la capacité restante sans réordonner les réservations fraîches déjà présentes dans le groupe. En cas d'égalité parfaite, la réservation avec le plus de passagers gagne; si l'égalité persiste, le choix est aléatoire. |
 | RG-A13 | **Recompute backlog** | Quand il existe un backlog, le moteur cherche d'abord le prochain retour véhicule; s'il n'existe pas encore de retour, il se cale sur la prochaine disponibilité statique des voitures. |
 | RG-A14 | **Heure de départ réelle** | L'heure de départ d'une voiture dépend de ses passagers réellement embarqués et de sa disponibilité réelle. Elle n'utilise plus la fin de la fenêtre du groupe par défaut. |
 | RG-A15 | **Retour véhicule** | L'heure de retour est calculée après l'itinéraire et la durée de trajet, puis enregistrée comme heure de disponibilité runtime de la voiture. |
@@ -183,7 +183,7 @@ Les réservations fraîches conservent leur ordre relatif pendant ce remplissage
 Choisit la meilleure réservation pour remplir les places restantes d'une voiture:
 - meilleur écart absolu avec la capacité restante,
 - puis le plus grand nombre de passagers restants,
-- puis l'ID le plus faible.
+- puis un choix aléatoire entre les candidats encore à égalité.
 
 Rôle:
 - faire du vrai best-fit de remplissage,

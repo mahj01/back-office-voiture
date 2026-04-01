@@ -59,6 +59,7 @@ Après la réservation cible:
 - la réservation cible reste toujours prioritaire dans son tour.
 
 Si la réservation cible reste partiellement servie, le reste de cette réservation garde la priorité avant toute réservation fraîche du même groupe.
+Si plusieurs réservations sont à égalité parfaite pour le remplissage, celle avec le plus de passagers est choisie; si l'égalité persiste, le choix devient aléatoire.
 
 ### 7. Départ réel de la voiture
 L'heure de départ réelle d'une voiture est calculée à partir de:

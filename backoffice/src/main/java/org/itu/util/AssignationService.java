@@ -899,7 +899,7 @@ public class AssignationService {
     private Reservation trouverMeilleureReservationPourCapacite(List<Reservation> groupe,
             Map<Integer, Integer> passagersRestants, Reservation cible, List<Integer> reservationsIgnoreesPourCetteVoiture,
             int capaciteRestante) {
-        Reservation meilleureReservation = null;
+        List<Reservation> meilleuresReservations = new ArrayList<>();
         int meilleurEcart = Integer.MAX_VALUE;
         int restantsMeilleur = Integer.MIN_VALUE;
 
@@ -918,16 +918,21 @@ public class AssignationService {
 
             int ecart = Math.abs(restants - capaciteRestante);
             if (ecart < meilleurEcart
-                    || (ecart == meilleurEcart && restants > restantsMeilleur)
-                    || (ecart == meilleurEcart && restants == restantsMeilleur
-                        && (meilleureReservation == null || reservation.getId() < meilleureReservation.getId()))) {
-                meilleureReservation = reservation;
+                    || (ecart == meilleurEcart && restants > restantsMeilleur)) {
+                meilleuresReservations.clear();
+                meilleuresReservations.add(reservation);
                 meilleurEcart = ecart;
                 restantsMeilleur = restants;
+            } else if (ecart == meilleurEcart && restants == restantsMeilleur) {
+                meilleuresReservations.add(reservation);
             }
         }
 
-        return meilleureReservation;
+        if (meilleuresReservations.isEmpty()) {
+            return null;
+        }
+
+        return meilleuresReservations.get(ThreadLocalRandom.current().nextInt(meilleuresReservations.size()));
     }
 
     private void marquerPassagersNonAssignes(List<AssignationVoiture> assignations, List<Reservation> groupe,
