@@ -30,14 +30,16 @@ Fichiers liés:
 ### 3. Construction des groupes
 - le premier groupe est construit autour d'une réservation ancre,
 - les réservations proches dans une fenêtre de `TA` minutes sont ajoutées,
-- les réservations déjà en attente peuvent être réinjectées dans le groupe lors d'un recompute.
+- les réservations déjà en attente peuvent être réinjectées dans le groupe lors d'un recompute,
+- lors d'un recompute, les réservations strictement antérieures à l'heure de disponibilité de référence sont traitées comme backlog; les réservations à cette heure ou après restent fraîches.
 
 ### 4. Priorité de traitement des réservations
 Dans un groupe actif, les priorités sont les suivantes:
-1. une réservation déjà en backlog garde sa priorité FIFO,
-2. sinon la réservation avec le plus de passagers restants passe d'abord,
-3. si une réservation est partiellement servie, elle reste prioritaire jusqu'à épuisement complet,
-4. une réservation qui ne trouve aucune voiture ne bloque pas tout le groupe: elle passe seule en attente.
+1. une réservation déjà en backlog passe avant les réservations fraîches,
+2. parmi les réservations de backlog, celle qui a le plus de passagers restants passe d'abord,
+3. si plusieurs réservations sont fraîches, leur ordre initial de groupe est conservé,
+4. si une réservation est partiellement servie, elle reste prioritaire jusqu'à épuisement complet,
+5. une réservation qui ne trouve aucune voiture ne bloque pas tout le groupe: elle passe seule en attente.
 
 ### 5. Choix du véhicule pour la réservation cible
 Le véhicule est choisi selon cette hiérarchie:
@@ -55,6 +57,8 @@ Après la réservation cible:
 - la voiture est complétée avec d'autres réservations du même groupe,
 - le remplissage complémentaire choisit la réservation la plus proche de la capacité restante,
 - la réservation cible reste toujours prioritaire dans son tour.
+
+Si la réservation cible reste partiellement servie, le reste de cette réservation garde la priorité avant toute réservation fraîche du même groupe.
 
 ### 7. Départ réel de la voiture
 L'heure de départ réelle d'une voiture est calculée à partir de:
@@ -76,14 +80,16 @@ Quand il reste des réservations en attente:
 - le moteur cherche d'abord le prochain retour d'une voiture,
 - s'il n'existe aucun retour runtime encore exploitable, il cherche la prochaine disponibilité statique des voitures,
 - le recompute construit un nouveau groupe autour de cette heure,
-- le backlog déjà présent garde sa priorité d'attente.
+- le backlog déjà présent garde sa priorité d'attente,
+- les réservations strictement antérieures à l'heure de disponibilité de référence sont intégrées au backlog,
+- les réservations plus récentes restent fraîches et ne passent qu'après le backlog.
 
 ### 10. Fin de traitement
 Si plus aucune voiture future n'est disponible:
 - les passagers restants sont marqués comme non assignés.
 
 ## Ce qui ne doit plus arriver
-- une réservation plus petite ne doit pas dépasser une réservation déjà en attente plus ancienne,
+- une réservation fraîche ne doit pas dépasser une réservation déjà en backlog,
 - une réservation partiellement servie ne doit pas perdre sa priorité entre deux voitures,
 - une réservation ne doit pas bloquer tout le groupe si elle seule ne peut pas être servie,
 - une voiture ne doit pas attendre la fin de la fenêtre du groupe si elle est déjà disponible et complètement remplie.
@@ -100,7 +106,7 @@ Si client A a 15 passagers et que les voitures disponibles sont de 12 et 13 plac
 Si client 2002 est déjà en attente avant client 2003:
 - client 2002 reste devant client 2003 dans les recomputes,
 - même si client 2003 est plus facile à servir,
-- le backlog conserve l'ordre d'arrivée.
+- le backlog est trié par nombre de passagers restants, puis par heure d'arrivée, puis par ID.
 
 ### Cas 3 - Voiture disponible dès maintenant
 Si une voiture est disponible à 10:00 et que les passagers réellement embarqués sont prêts à 10:00:
@@ -111,7 +117,7 @@ Si une voiture est disponible à 10:00 et que les passagers réellement embarqu�
 ## Résumé bref
 La logique actuelle est un moteur d'assignation par groupes et backlog, avec:
 - priorité au backlog,
-- priorité à la réservation la plus lourde restante,
+- priorité à la réservation backlog la plus lourde restante,
 - split autorisé,
 - best-fit véhicule par nombre de trajets / places / carburant,
 - recompute sur retour ou disponibilité future,

@@ -21,19 +21,19 @@ L'algorithme gère maintenant:
 | RG-A1 | **Groupement par aéroport** | Les réservations sont d'abord regroupées par `idLieuAtterissage`. |
 | RG-A2 | **Tri temporel** | Dans chaque aéroport, les réservations sont triées par heure d'arrivée croissante puis par identifiant. |
 | RG-A3 | **Fenêtre initiale** | Le premier groupe est construit à partir d'une réservation ancre et d'une fenêtre de `TA` minutes autour de cette ancre. |
-| RG-A4 | **Backlog prioritaire** | Les réservations déjà mises en attente restent prioritaires lors des recomputes, dans l'ordre d'arrivée en backlog. |
-| RG-A5 | **Priorité de réservation** | Dans un groupe actif, la réservation avec le plus de passagers restants est prioritaire. En cas d'égalité, le meilleur fit véhicule sert de départage. |
-| RG-A6 | **Réservation prioritaire conservée** | Une réservation partiellement servie garde la priorité jusqu'à ce que tous ses passagers restants soient assignés. |
+| RG-A4 | **Backlog prioritaire** | Les réservations déjà mises en attente restent prioritaires lors des recomputes. Dans le backlog, le tri se fait par nombre de passagers restants décroissant, puis par heure d'arrivée, puis par identifiant. |
+| RG-A5 | **Priorité de réservation** | Dans un groupe actif, la réservation avec le plus de passagers restants est prioritaire parmi les réservations de backlog. En cas d'égalité, le meilleur fit véhicule sert de départage. Les réservations fraîches gardent leur ordre initial de groupe. |
+| RG-A6 | **Réservation prioritaire conservée** | Une réservation partiellement servie garde la priorité jusqu'à ce que tous ses passagers restants soient assignés, avant toute réservation fraîche du même groupe. |
 | RG-A7 | **Pas de blocage de groupe** | Si la réservation courante n'a aucun véhicule disponible, seule cette réservation passe en attente; le reste du groupe continue à être traité. |
 | RG-A8 | **Choix du véhicule** | Pour une réservation donnée, le véhicule est choisi selon: 1) nombre de trajets le plus faible, 2) écart de places le plus faible, 3) diesel avant essence, 4) hasard en ultime égalité. |
 | RG-A9 | **Meilleur fit sur le vrai besoin** | Si aucune voiture ne peut couvrir complètement la réservation, le véhicule est quand même choisi en comparant sa capacité au nombre de passagers réels de la réservation, pas à `1`. |
 | RG-A10 | **Split autorisé** | Une réservation peut être répartie sur plusieurs voitures si sa taille dépasse la capacité du véhicule ou si cela permet d'optimiser le remplissage. |
 | RG-A11 | **Remplissage complémentaire** | Après la réservation cible, la voiture est complétée avec d'autres réservations du groupe via un best-fit sur la capacité restante. |
-| RG-A12 | **Ordre du filler** | Le filler choisit la réservation la plus proche de la capacité restante, mais ne doit jamais passer devant la réservation cible prioritaire du tour. |
+| RG-A12 | **Ordre du filler** | Le filler choisit la réservation la plus proche de la capacité restante sans réordonner les réservations fraîches déjà présentes dans le groupe. |
 | RG-A13 | **Recompute backlog** | Quand il existe un backlog, le moteur cherche d'abord le prochain retour véhicule; s'il n'existe pas encore de retour, il se cale sur la prochaine disponibilité statique des voitures. |
 | RG-A14 | **Heure de départ réelle** | L'heure de départ d'une voiture dépend de ses passagers réellement embarqués et de sa disponibilité réelle. Elle n'utilise plus la fin de la fenêtre du groupe par défaut. |
 | RG-A15 | **Retour véhicule** | L'heure de retour est calculée après l'itinéraire et la durée de trajet, puis enregistrée comme heure de disponibilité runtime de la voiture. |
-| RG-A16 | **Pas de groupe bloquant au dernier backlog** | Si plusieurs réservations sont en attente, l'algorithme ne réordonne pas le backlog par nombre de passagers au détriment de l'ordre d'attente. |
+| RG-A16 | **Pas de groupe bloquant au dernier backlog** | Si plusieurs réservations sont en attente, l'algorithme garde les réservations de backlog devant les réservations fraîches et les réordonne par nombre de passagers restants, puis par heure d'arrivée, puis par identifiant. |
 
 ---
 
@@ -102,12 +102,12 @@ Ce tri alimente le premier groupe et les recomputes.
 
 ### `extraireReservationPrioritaire(List<Reservation>, Map<Integer, ReservationEnAttente>)`
 Extrait la prochaine réservation ancre:
-- d'abord le premier élément du backlog s'il existe,
+- d'abord la réservation de backlog la plus lourde s'il existe un backlog,
 - sinon la première réservation restante triée par heure.
 
 Rôle:
-- préserver l'ordre d'attente,
-- éviter qu'une réservation arrivée plus tard prenne la main sur une réservation déjà en attente.
+- préserver la priorité du backlog,
+- éviter qu'une réservation fraîche prenne la main sur une réservation déjà en attente.
 
 ### `construireGroupeFenetre(...)`
 Construit le premier groupe autour d'une réservation ancre:
@@ -121,44 +121,30 @@ Ce helper est utilisé pour le premier passage naturel d'un aéroport.
 ### `construireGroupeAutourDeRetour(...)`
 Construit un groupe de recompute autour d'une heure de retour ou de disponibilité future:
 - inclut toutes les réservations déjà en backlog,
-- ajoute les réservations restantes dans la fenêtre `[retour - TA, retour + TA]`,
+- ajoute les réservations restantes dans la fenêtre `[retour - TA, retour]`,
 - retire ces réservations des listes de travail,
-- conserve l'ordre d'attente du backlog.
+- conserve la priorité du backlog sur les réservations fraîches,
+- classe le backlog par nombre de passagers restants décroissant, puis par heure d'arrivée, puis par ID.
 
 Ce helper permet au moteur de relancer le calcul quand une voiture redevient disponible.
 
 ### `trierGroupeParPassagersRestants(...)`
 Trie le groupe actif selon deux règles différentes:
-- les réservations déjà en attente gardent leur ordre FIFO,
-- les réservations fraîches sont ordonnées par nombre de passagers restants décroissant,
-  puis par heure d'arrivée, puis par ID.
+- les réservations déjà en attente sont ordonnées par nombre de passagers restants décroissant,
+  puis par heure d'arrivée, puis par ID,
+- les réservations fraîches gardent leur ordre d'origine dans le groupe.
 
-C'est la clé pour éviter qu'une réservation plus récente ou plus petite dépasse une réservation déjà en attente.
-
-### `positionDansEnAttente(...)`
-Donne la position d'une réservation dans le backlog courant.
-
-Rôle:
-- implémenter un tri FIFO stable pour les réservations en attente,
-- empêcher le backlog d'être reclassé par taille de groupe.
-
-### `trouverReservationCibleInitiale(...)`
-Choisit la première réservation cible d'un groupe:
-- d'abord une réservation issue du backlog présent dans le groupe,
-- sinon la première réservation restante.
-
-Rôle:
-- donner la priorité au backlog dès l'entrée dans un groupe,
-- respecter la continuité d'une réservation déjà partiellement servie.
+C'est la clé pour éviter qu'une réservation fraîche dépasse une réservation déjà en attente, tout en gardant l'ordre des fraîches stable.
 
 ### `trouverReservationCibleMeilleurFit(...)`
 Choisit la réservation cible pour les tours suivants dans le groupe:
-- priorité au plus grand nombre de passagers restants,
+- priorité aux réservations de backlog si elles existent,
+- parmi les réservations de backlog, priorité au plus grand nombre de passagers restants,
 - en cas d'égalité, la réservation qui produit le meilleur fit avec une voiture disponible,
 - puis l'ID le plus faible si nécessaire.
 
 Important:
-- cette méthode ne doit pas faire passer une petite réservation devant une grande juste parce qu'elle est plus facile à caser.
+- cette méthode ne doit pas faire passer une réservation fraîche devant une réservation déjà en backlog.
 
 ### `trouverMeilleureVoitureDisponible(...)`
 Sélectionne la voiture qui peut servir complètement la réservation cible.
@@ -191,6 +177,7 @@ Ajoute la réservation cible à l'assignation:
 Complète la voiture avec d'autres réservations du groupe après la cible principale.
 
 Le but est de maximiser le remplissage sans casser la priorité de la réservation cible.
+Les réservations fraîches conservent leur ordre relatif pendant ce remplissage.
 
 ### `trouverMeilleureReservationPourCapacite(...)`
 Choisit la meilleure réservation pour remplir les places restantes d'une voiture:
@@ -249,17 +236,20 @@ Rôle:
 
 ## Points importants de comportement
 
-### 1. Le backlog ne doit pas être reclassé par taille
-Une réservation déjà en attente reste prioritaire sur une réservation arrivée plus tard, même si cette dernière a plus de passagers ou un meilleur fit.
+### 1. Le backlog reste devant
+Une réservation déjà en attente reste prioritaire sur une réservation fraîche. Dans le backlog, les réservations les plus lourdes passent d'abord.
 
 ### 2. Une réservation partiellement servie garde la main
 Si une réservation a été coupée entre plusieurs voitures, la partie restante doit continuer à être servie avant de laisser passer une autre réservation du même groupe.
 
-### 3. Le choix de voiture reste indépendant de la priorité de réservation
+### 3. Les réservations fraîches gardent leur ordre
+Quand plusieurs réservations fraîches sont regroupées ensemble, leur ordre relatif n'est pas réordonné par le split ou le filler.
+
+### 4. Le choix de voiture reste indépendant de la priorité de réservation
 La priorité de réservation détermine **quelle réservation** est servie.
 La priorité de voiture détermine **quel véhicule** est utilisé pour cette réservation.
 
-### 4. Le départ dépend des passagers réellement embarqués
+### 5. Le départ dépend des passagers réellement embarqués
 Le départ n'est plus basé sur la fin de la fenêtre du groupe, mais sur:
 - les réservations réellement embarquées,
 - la disponibilité effective du véhicule.
@@ -297,17 +287,11 @@ Le départ réel et le retour runtime de la voiture ont été calculés et enreg
 
 L'algorithme actuel n'est plus un simple tri glouton par capacité. C'est un moteur de planification avec:
 - priorité backlog,
-- priorité par volume de passagers restants,
+- priorité backlog puis volume de passagers restants,
 - split de réservation,
 - best-fit véhicule,
 - recompute sur retour ou disponibilité future,
 - départ calculé sur les passagers réellement embarqués.
-├── Toutes les voitures: trajets=0, heureRetour=null
-
-Après chaque assignation
-├── voiture.trajets++
-└── voiture.heureRetour = heureDepart + tempsTrajet
-```
 
 ---
 
@@ -335,11 +319,11 @@ Script: `database-scripts/03-17_test_nombre_trajets.sql`
 | Fichier | Modifications |
 |---------|--------------|
 | `Voiture.java` | Ajout `nombreTrajets`, `heureRetourAeroport`, `estDisponibleA()` |
-| `AssignationService.java` | Nouvelle logique de sélection avec priorité trajets |
+| `AssignationService.java` | Logique d'assignation par backlog, split et recompute |
 | `03-17_test_nombre_trajets.sql` | Script de test des nouvelles règles |
 
 ---
 
 ## Résumé
 
-La méthode `assignerVoitures` assure maintenant une **répartition équitable** des trajets entre les voitures tout en respectant la **disponibilité temporelle**. Les voitures qui ont moins travaillé sont prioritaires, et les clients sont servis dès qu'une voiture adaptée devient disponible, même si cela implique un délai d'attente.
+La méthode `assignerVoitures` assure maintenant une **répartition par groupes et backlog** tout en respectant la **disponibilité temporelle**. Les voitures qui ont moins travaillé restent prioritaires pour le choix du véhicule, mais l'ordre des réservations est d'abord piloté par le backlog, puis par le volume de passagers restants.
