@@ -408,27 +408,19 @@ public class AssignationService {
         while (!remaining.isEmpty() || !reservationsEnAttente.isEmpty()) {
             GroupeReservation groupeData;
             if (!reservationsEnAttente.isEmpty()) {
-                Timestamp heureRetourVehicule = trouverProchaineHeureRetourVoitureApres(derniereHeureRecompute);
-                if (heureRetourVehicule == null) {
-                heureRetourVehicule = trouverProchaineHeureDisponibiliteVoitureApres(derniereHeureRecompute);
-                if (heureRetourVehicule == null) {
-                System.out.printf("[Recompute] Aucun retour ni disponibilite future apres %s, backlog=%d%n",
-                    derniereHeureRecompute != null ? derniereHeureRecompute.toString().substring(11, 16) : "debut",
-                    reservationsEnAttente.size());
-                break;
+                Timestamp heureDisponibiliteVehicule = trouverProchaineHeureDisponibiliteVoitureApres(derniereHeureRecompute);
+                if (heureDisponibiliteVehicule == null) {
+                    System.out.printf("[Recompute] Aucune disponibilite future apres %s, backlog=%d%n",
+                        derniereHeureRecompute != null ? derniereHeureRecompute.toString().substring(11, 16) : "debut",
+                        reservationsEnAttente.size());
+                    break;
                 }
-                System.out.printf("[Recompute] Aucun retour en cours; prochaine disponibilite %s | backlog=%d | remaining=%d%n",
-                    heureRetourVehicule.toString().substring(11, 16),
+                System.out.printf("[Recompute] Nouveau groupe autour de la disponibilite %s | backlog=%d | remaining=%d%n",
+                    heureDisponibiliteVehicule.toString().substring(11, 16),
                     reservationsEnAttente.size(),
                     remaining.size());
-            } else {
-                System.out.printf("[Recompute] Nouveau groupe autour du retour %s | backlog=%d | remaining=%d%n",
-                    heureRetourVehicule.toString().substring(11, 16),
-                    reservationsEnAttente.size(),
-                    remaining.size());
-                }
-                derniereHeureRecompute = heureRetourVehicule;
-                groupeData = construireGroupeAutourDeRetour(heureRetourVehicule, remaining, reservationsEnAttente,
+                derniereHeureRecompute = heureDisponibiliteVehicule;
+                groupeData = construireGroupeAutourDeRetour(heureDisponibiliteVehicule, remaining, reservationsEnAttente,
                         tempsAttente);
             } else {
                 Reservation mainReservation = extraireReservationPrioritaire(remaining, reservationsEnAttente);
@@ -622,15 +614,20 @@ public class AssignationService {
             backlogAbsorbe.add(enAttente.reservation.getId());
         }
 
-        Timestamp debutFenetre = trouverHeureArriveeMinBacklog(reservationsEnAttente);
-        if (debutFenetre == null) {
-            debutFenetre = new Timestamp(heureRetourVehicule.getTime() - (long) (tempsAttente * 60 * 1000));
-        }
-        Timestamp finFenetre = heureRetourVehicule;
+        Timestamp debutFenetre = heureRetourVehicule;
+        Timestamp finFenetre = new Timestamp(heureRetourVehicule.getTime() + (long) (tempsAttente * 60 * 1000));
 
         List<Reservation> aRetirer = new ArrayList<>();
         for (Reservation reservation : remaining) {
             Timestamp rTime = reservation.getDateArriverAsTimestamp();
+            if (rTime != null && rTime.before(debutFenetre)) {
+                groupe.add(reservation);
+                passagersRestants.put(reservation.getId(), reservation.getNombrePassager());
+                reservationsEnAttenteDansGroupe.add(reservation.getId());
+                backlogAbsorbe.add(reservation.getId());
+                aRetirer.add(reservation);
+                continue;
+            }
             if (rTime != null && !rTime.before(debutFenetre) && !rTime.after(finFenetre)) {
                 groupe.add(reservation);
                 passagersRestants.put(reservation.getId(), reservation.getNombrePassager());
@@ -646,7 +643,7 @@ public class AssignationService {
         }
 
         trierGroupeParPassagersRestants(groupe, passagersRestants, reservationsEnAttenteDansGroupe);
-        System.out.printf("[Recompute] Fenetre retour=%s, debut=%s, fin=%s, inclus=%d, attente=%d%n",
+        System.out.printf("[Recompute] Fenetre ancree=%s, debut=%s, fin=%s, inclus=%d, attente=%d%n",
             heureRetourVehicule.toString().substring(11, 16),
             debutFenetre.toString().substring(11, 16),
             finFenetre.toString().substring(11, 16),
@@ -692,17 +689,6 @@ public class AssignationService {
 
             return Integer.compare(a.getId(), b.getId());
         });
-    }
-
-    private Timestamp trouverHeureArriveeMinBacklog(Map<Integer, ReservationEnAttente> reservationsEnAttente) {
-        Timestamp heureArriveeMin = null;
-        for (ReservationEnAttente enAttente : reservationsEnAttente.values()) {
-            Timestamp rTime = enAttente.reservation.getDateArriverAsTimestamp();
-            if (rTime != null && (heureArriveeMin == null || rTime.before(heureArriveeMin))) {
-                heureArriveeMin = rTime;
-            }
-        }
-        return heureArriveeMin;
     }
 
     private List<ReservationEnAttente> trierReservationsEnAttente(Map<Integer, ReservationEnAttente> reservationsEnAttente) {
@@ -757,23 +743,6 @@ public class AssignationService {
             return enAttente.passagersRestants;
         }
         return reservation.getNombrePassager();
-    }
-
-    private Timestamp trouverProchaineHeureRetourVoitureApres(Timestamp apres) {
-        Timestamp heureRetourMin = null;
-        for (Voiture voiture : voituresDisponibles) {
-            Timestamp retour = voiture.getHeureRetourAeroport();
-            if (retour == null) {
-                continue;
-            }
-            if (apres != null && retour.before(apres)) {
-                continue;
-            }
-            if (heureRetourMin == null || retour.before(heureRetourMin)) {
-                heureRetourMin = retour;
-            }
-        }
-        return heureRetourMin;
     }
 
     private Timestamp trouverProchaineHeureDisponibiliteVoitureApres(Timestamp apres) {

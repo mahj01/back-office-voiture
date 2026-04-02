@@ -32,22 +32,22 @@ INSERT INTO parametre (libelle, valeur) VALUES ('vitesse', '50') ON CONFLICT DO 
 -- Véhicule unique observé dans la capture
 INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente, depart_heure_disponibilite)
 VALUES
-('VEHICLE1', 'Generic', 'Van10', 9, 'D', 50.00, 30.00, '2026-03-25 10:00:00')
+('VEHICLE1', 'Generic', 'Van10', 12, 'D', 50.00, 30.00, '2026-03-25 11:45:00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente, depart_heure_disponibilite)
 VALUES
-    ('VEHICLE2', 'Generic', 'Van10', 7, 'D', 50.00, 30.00, '2026-03-25 10:00:00')
+    ('VEHICLE2', 'Generic', 'Van10', 14, 'D', 50.00, 30.00, '2026-03-25 12:14:00')
 ON CONFLICT DO NOTHING;
 
 -- Réservations (date 25/03/2026, heures et tailles selon la capture)
 INSERT INTO reservation (idClient, idLieu, dateArrivee, nombrePassagers, idLieuAtterissage)
 VALUES
-(2001, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 08:00:00', 3, (SELECT id FROM lieu WHERE code='AIR')),
-(2002, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 09:00:00', 7, (SELECT id FROM lieu WHERE code='AIR')),
-(2003, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 11:00:00', 12, (SELECT id FROM lieu WHERE code='AIR')),
+(2001, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 08:00:00', 7, (SELECT id FROM lieu WHERE code='AIR')),
+(2002, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 12:00:00', 10, (SELECT id FROM lieu WHERE code='AIR')),
+(2003, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 12:10:00', 7, (SELECT id FROM lieu WHERE code='AIR')),
 
-(2004, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 11:00:00', 8, (SELECT id FROM lieu WHERE code='AIR'));
+(2004, (SELECT id FROM lieu WHERE code='HOT1'), '2026-03-25 12:20:00', 3, (SELECT id FROM lieu WHERE code='AIR'));
 
 COMMIT;
 
