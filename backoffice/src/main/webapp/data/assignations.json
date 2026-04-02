@@ -1,0 +1,147 @@
+{
+  "statistiques": {
+    "dateReservation": "2026-04-02",
+    "nombreReservations": 12,
+    "nombreVoitures": 5,
+    "tempsAttente": 30
+  },
+  "assignations": [
+    {
+      "id": 1,
+      "voiture": {
+        "matricule": "1234 TBA",
+        "marque": "Toyota",
+        "modele": "Hiace",
+        "typeCarburant": "D",
+        "nombrePlaces": 8
+      },
+      "totalPassagers": 7,
+      "ecartPlaces": 1,
+      "isGrouped": true,
+      "lieuAtterissage": "Ivato",
+      "departAssignation": "2026-04-02 08:30",
+      "distanceTotaleKm": 45.5,
+      "vitesseKmH": 40,
+      "tempsTrajetMinutes": 68,
+      "heureRetourAeroport": "09:38",
+      "reservations": [
+        { "idClient": 101, "nombrePassager": 3, "passagersAssignes": 3, "lieu": "Analakely", "heure": "08:30" },
+        { "idClient": 102, "nombrePassager": 2, "passagersAssignes": 2, "lieu": "Andohatapenaka", "heure": "08:35" },
+        { "idClient": 103, "nombrePassager": 2, "passagersAssignes": 2, "lieu": "Ambodivona", "heure": "08:40" }
+      ],
+      "itineraire": [
+        { "lieu": "Ivato", "distanceVersProchain": 12.5, "isAeroport": true },
+        { "lieu": "Analakely", "distanceVersProchain": 3.2, "isAeroport": false },
+        { "lieu": "Andohatapenaka", "distanceVersProchain": 8.3, "isAeroport": false },
+        { "lieu": "Ambodivona", "distanceVersProchain": 21.5, "isAeroport": false },
+        { "lieu": "Ivato", "distanceVersProchain": 0, "isAeroport": true }
+      ]
+    },
+    {
+      "id": 2,
+      "voiture": {
+        "matricule": "5678 TBC",
+        "marque": "Hyundai",
+        "modele": "H1",
+        "typeCarburant": "E",
+        "nombrePlaces": 5
+      },
+      "totalPassagers": 4,
+      "ecartPlaces": 1,
+      "isGrouped": false,
+      "lieuAtterissage": "Ivato",
+      "departAssignation": "2026-04-02 09:00",
+      "distanceTotaleKm": 32.0,
+      "vitesseKmH": 35,
+      "tempsTrajetMinutes": 55,
+      "heureRetourAeroport": "09:55",
+      "reservations": [
+        { "idClient": 104, "nombrePassager": 4, "passagersAssignes": 4, "lieu": "Ankorondrano", "heure": "09:00" }
+      ],
+      "itineraire": [
+        { "lieu": "Ivato", "distanceVersProchain": 15.0, "isAeroport": true },
+        { "lieu": "Ankorondrano", "distanceVersProchain": 17.0, "isAeroport": false },
+        { "lieu": "Ivato", "distanceVersProchain": 0, "isAeroport": true }
+      ]
+    },
+    {
+      "id": 3,
+      "voiture": {
+        "matricule": "9012 TBD",
+        "marque": "Mercedes",
+        "modele": "Sprinter",
+        "typeCarburant": "D",
+        "nombrePlaces": 12
+      },
+      "totalPassagers": 10,
+      "ecartPlaces": 2,
+      "isGrouped": true,
+      "lieuAtterissage": "Ivato",
+      "departAssignation": "2026-04-02 10:15",
+      "distanceTotaleKm": 52.3,
+      "vitesseKmH": 38,
+      "tempsTrajetMinutes": 82,
+      "heureRetourAeroport": "11:37",
+      "reservations": [
+        { "idClient": 105, "nombrePassager": 4, "passagersAssignes": 4, "lieu": "Ivandry", "heure": "10:15" },
+        { "idClient": 106, "nombrePassager": 3, "passagersAssignes": 3, "lieu": "Ambatobe", "heure": "10:20" },
+        { "idClient": 107, "nombrePassager": 3, "passagersAssignes": 3, "lieu": "Analamahitsy", "heure": "10:25" }
+      ],
+      "itineraire": [
+        { "lieu": "Ivato", "distanceVersProchain": 14.2, "isAeroport": true },
+        { "lieu": "Ivandry", "distanceVersProchain": 5.5, "isAeroport": false },
+        { "lieu": "Ambatobe", "distanceVersProchain": 6.8, "isAeroport": false },
+        { "lieu": "Analamahitsy", "distanceVersProchain": 25.8, "isAeroport": false },
+        { "lieu": "Ivato", "distanceVersProchain": 0, "isAeroport": true }
+      ]
+    },
+    {
+      "id": 4,
+      "voiture": null,
+      "totalPassagers": 6,
+      "ecartPlaces": 0,
+      "isGrouped": false,
+      "lieuAtterissage": "Ivato",
+      "departAssignation": "N/A",
+      "distanceTotaleKm": 0,
+      "vitesseKmH": 0,
+      "tempsTrajetMinutes": 0,
+      "heureRetourAeroport": null,
+      "reservations": [
+        { "idClient": 108, "nombrePassager": 6, "passagersAssignes": 6, "lieu": "Ambohimanarina", "heure": "11:00" }
+      ],
+      "itineraire": []
+    },
+    {
+      "id": 5,
+      "voiture": {
+        "matricule": "3456 TBE",
+        "marque": "Nissan",
+        "modele": "Urvan",
+        "typeCarburant": "G",
+        "nombrePlaces": 10
+      },
+      "totalPassagers": 8,
+      "ecartPlaces": 2,
+      "isGrouped": true,
+      "lieuAtterissage": "Ivato",
+      "departAssignation": "2026-04-02 14:00",
+      "distanceTotaleKm": 38.7,
+      "vitesseKmH": 42,
+      "tempsTrajetMinutes": 55,
+      "heureRetourAeroport": "14:55",
+      "reservations": [
+        { "idClient": 109, "nombrePassager": 3, "passagersAssignes": 3, "lieu": "Andoharanofotsy", "heure": "14:00" },
+        { "idClient": 110, "nombrePassager": 5, "passagersAssignes": 3, "lieu": "Tanjombato", "heure": "14:05" },
+        { "idClient": 111, "nombrePassager": 2, "passagersAssignes": 2, "lieu": "Ankadimbahoaka", "heure": "14:10" }
+      ],
+      "itineraire": [
+        { "lieu": "Ivato", "distanceVersProchain": 18.5, "isAeroport": true },
+        { "lieu": "Andoharanofotsy", "distanceVersProchain": 4.2, "isAeroport": false },
+        { "lieu": "Tanjombato", "distanceVersProchain": 3.5, "isAeroport": false },
+        { "lieu": "Ankadimbahoaka", "distanceVersProchain": 12.5, "isAeroport": false },
+        { "lieu": "Ivato", "distanceVersProchain": 0, "isAeroport": true }
+      ]
+    }
+  ]
+}

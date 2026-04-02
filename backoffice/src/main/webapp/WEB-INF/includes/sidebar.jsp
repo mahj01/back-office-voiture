@@ -45,10 +45,20 @@
         </li>
         <!-- Assignation -->
         <li class="nav-section<%= uri.contains("/assignation") ? " active" : "" %>">
-            <a href="<%= ctx %>/assignation/saisie" class="nav-link<%= uri.contains("/assignation") ? " active" : "" %>">
+            <a href="#assignationMenu" class="nav-link section-toggle" data-bs-toggle="collapse"
+               aria-expanded="<%= uri.contains("/assignation") ? "true" : "false" %>">
                 <i class="bi bi-arrow-left-right"></i>
                 <span>Assignation</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
             </a>
+            <ul class="collapse<%= uri.contains("/assignation") ? " show" : "" %>" id="assignationMenu">
+                <li><a href="<%= ctx %>/assignation/saisie" class="<%= uri.endsWith("/assignation/saisie") ? "active" : "" %>">
+                    <i class="bi bi-calendar-plus"></i> Saisie
+                </a></li>
+                <li><a href="<%= ctx %>/assignation/resultatStatique.jsp" class="<%= uri.contains("resultatStatique") ? "active" : "" %>">
+                    <i class="bi bi-braces"></i> Résultats
+                </a></li>
+            </ul>
         </li>
     </ul>
 </nav>
