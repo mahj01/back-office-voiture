@@ -33,7 +33,7 @@
 
 <div class="container">
     <h2 class="text-center mb-4">
-        <i class="bi bi-file-earmark-code text-primary"></i> Résultat des assignations
+        Résultat des assignations
     </h2>
 
     <div class="alert alert-success text-center">
