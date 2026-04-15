@@ -58,7 +58,8 @@ CREATE TABLE voiture (
     nombre_place INTEGER NOT NULL CHECK (nombre_place > 0),
     type_carburant VARCHAR(2) NOT NULL,
     vitesse_moyenne DECIMAL(10,2),
-    temp_attente DECIMAL(10,2)
+    temp_attente DECIMAL(10,2),
+    depart_heure_disponibilite TIMESTAMP
 );
 
 -- Table reservation

@@ -18,7 +18,7 @@ public class FonctionVoiture {
 
     public List<Voiture> getAllVoitures() {
         List<Voiture> voitures = new ArrayList<>();
-        String sql = "SELECT id,matricule,marque,model,nombre_place,type_carburant,vitesse_moyenne,temp_attente FROM voiture";
+        String sql = "SELECT id,matricule,marque,model,nombre_place,type_carburant,vitesse_moyenne,temp_attente,depart_heure_disponibilite FROM voiture";
         db.connect();
         try (Statement stmt = db.getConnection().createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -31,7 +31,8 @@ public class FonctionVoiture {
                     rs.getInt("nombre_place"),
                     rs.getString("type_carburant"),
                     rs.getBigDecimal("vitesse_moyenne"),
-                    rs.getBigDecimal("temp_attente")
+                    rs.getBigDecimal("temp_attente"),
+                    rs.getTimestamp("depart_heure_disponibilite")
                 );
                 voitures.add(v);
             }
@@ -42,7 +43,7 @@ public class FonctionVoiture {
     }
 
     public Voiture getById(int id) {
-        String sql = "SELECT id,matricule,marque,model,nombre_place,type_carburant,vitesse_moyenne,temp_attente FROM voiture WHERE id = ?";
+        String sql = "SELECT id,matricule,marque,model,nombre_place,type_carburant,vitesse_moyenne,temp_attente,depart_heure_disponibilite FROM voiture WHERE id = ?";
         db.connect();
         
         try (PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
@@ -57,7 +58,8 @@ public class FonctionVoiture {
                         rs.getInt("nombre_place"),
                         rs.getString("type_carburant"),
                         rs.getBigDecimal("vitesse_moyenne"),
-                        rs.getBigDecimal("temp_attente")
+                        rs.getBigDecimal("temp_attente"),
+                        rs.getTimestamp("depart_heure_disponibilite")
                     );
                 }
             }

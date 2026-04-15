@@ -24,16 +24,16 @@
 --
 --   VOITURE v1 (8 places, Diesel) :
 --     - r1 : 6 passagers (tous)
---     - r2 : 2 passagers (sur 4)
+--     - r3 : 2 passagers (sur 3)
 --     - Total : 8 passagers (voiture pleine)
 --
 --   VOITURE v2 (3 places, Essence) :
---     - r2 : 2 passagers (restants)
 --     - r3 : 1 passager (sur 3)
+--     - r2 : 2 passagers (sur 4)
 --     - Total : 3 passagers (voiture pleine)
 --
 --   NON ASSIGNÉS (attente retour voiture) :
---     - r3 : 2 passagers restants
+--     - r2 : 2 passagers restants
 --
 -- ============================================================
 
@@ -108,6 +108,11 @@ SELECT 'Total passagers = ' || SUM(nombrepassagers) || ' | Capacité totale voit
 FROM reservation WHERE DATE(datearrivee) = '2026-03-18';
 
 SELECT '=== RÉSULTAT ATTENDU (avec séparation des passagers) ===' AS info;
-SELECT 'v1 (8 places D): Client1(6 pass) + Client2(2/4 pass) = 8 passagers' AS attendu
-UNION ALL SELECT 'v2 (3 places E): Client2(2/4 pass) + Client3(1/3 pass) = 3 passagers'
-UNION ALL SELECT 'Non assignés: Client3(2/3 pass) - attente retour voiture';
+SELECT 'v1 (8 places D): Client1(6 pass) + Client1(2/3 pass) = 8 passagers' AS attendu
+UNION ALL SELECT 'v2 (3 places E): Client3 Client3(1/3 pass) + Client2 (2/4 pass) = 3 passagers'
+UNION ALL SELECT 'Non assignés: Client2(2/4 pass) - attente retour voiture';
+
+
+ALTER TABLE voiture
+ALTER COLUMN depart_heure_disponibilite
+SET DEFAULT '2026-03-18 00:00:00';

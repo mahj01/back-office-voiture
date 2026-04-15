@@ -1,269 +1,297 @@
-# Module Assignation - Priorité par Nombre de Trajets (Sprint 6)
+# Module Assignation - Algorithme actuel et priorité par nombre de trajets
 
 ## Description
 
-Ce module étend la logique d'assignation des voitures aux réservations en ajoutant la **priorité par nombre de trajets**. L'objectif est de répartir équitablement les trajets entre les voitures disponibles et de gérer la **disponibilité temporelle** des voitures en fonction de leur heure de retour à l'aéroport.
+Ce document décrit l'algorithme actuel d'assignation des voitures aux réservations après refactorisation de `AssignationService.java`.
+
+L'algorithme gère maintenant:
+- le groupement par aéroport puis par fenêtre temporelle,
+- la priorité entre réservations en attente,
+- le split des passagers d'une réservation sur plusieurs voitures,
+- la réutilisation des véhicules selon leur nombre de trajets,
+- le meilleur choix de véhicule selon capacité, trajet, carburant et hasard,
+- le recalcul quand une voiture redevient disponible.
 
 ---
 
-## Règles de gestion
+## Règles de gestion actuelles
 
 | # | Règle | Description |
 |---|-------|-------------|
-| RG-T1 | **Priorité nombre de trajets** | La voiture ayant effectué le **moins de trajets** dans la journée est prioritaire pour une nouvelle assignation. |
-| RG-T2 | **Voiture en trajet = non disponible** | Une voiture partie en trajet n'est plus candidate jusqu'à son **retour à l'aéroport**. |
-| RG-T3 | **Heure de retour** | L'heure de retour est calculée : `heureDepart + tempsTrajet`. La voiture devient disponible à partir de cette heure. |
-| RG-T4 | **Heure de départ ajustée** | Si la meilleure voiture revient **après** l'heure d'arrivée du client, le départ est retardé à l'heure de retour de la voiture. |
-| RG-T5 | **Report au prochain groupe** | Une réservation non assignée (pas de voiture disponible) est **reportée au prochain groupe** de réservations, pas à l'heure de retour de la voiture. |
-| RG-T6 | **Critères de sélection (ordre)** | 1. Nombre de trajets le plus bas → 2. Écart de places minimum → 3. Diesel prioritaire → 4. ID le plus bas (déterministe). |
-| RG-T7 | **Trajet = aller-retour complet** | Un trajet comprend : Aéroport → Hôtel(s) → Retour Aéroport. La voiture reste indisponible pendant toute cette durée. |
-| RG-T8 | **Hypothèse initiale** | À 00:00:00, toutes les voitures sont supposées à l'aéroport et disponibles (0 trajet effectué). |
-| RG-T9 | **Pas de groupe spécial** | Une réservation non assignée ne crée **pas de groupe spécial** à l'heure de retour de la voiture ; elle attend le prochain groupe naturel. |
+| RG-A1 | **Groupement par aéroport** | Les réservations sont d'abord regroupées par `idLieuAtterissage`. |
+| RG-A2 | **Tri temporel** | Dans chaque aéroport, les réservations sont triées par heure d'arrivée croissante puis par identifiant. |
+| RG-A3 | **Fenêtre initiale** | Le premier groupe est construit à partir d'une réservation ancre et d'une fenêtre de `TA` minutes autour de cette ancre. |
+| RG-A4 | **Backlog prioritaire** | Les réservations déjà mises en attente restent prioritaires lors des recomputes. Dans le backlog, le tri se fait par nombre de passagers restants décroissant, puis par heure d'arrivée, puis par identifiant. |
+| RG-A5 | **Priorité de réservation** | Dans un groupe actif, la réservation avec le plus de passagers restants est prioritaire parmi les réservations de backlog. En cas d'égalité, le meilleur fit véhicule sert de départage. Les réservations fraîches gardent leur ordre initial de groupe. |
+| RG-A6 | **Réservation prioritaire conservée** | Une réservation partiellement servie garde la priorité jusqu'à ce que tous ses passagers restants soient assignés, avant toute réservation fraîche du même groupe. |
+| RG-A7 | **Pas de blocage de groupe** | Si la réservation courante n'a aucun véhicule disponible, seule cette réservation passe en attente; le reste du groupe continue à être traité. |
+| RG-A8 | **Choix du véhicule** | Pour une réservation donnée, le véhicule est choisi selon: 1) nombre de trajets le plus faible, 2) écart de places le plus faible, 3) diesel avant essence, 4) hasard en ultime égalité. |
+| RG-A9 | **Meilleur fit sur le vrai besoin** | Si aucune voiture ne peut couvrir complètement la réservation, le véhicule est quand même choisi en comparant sa capacité au nombre de passagers réels de la réservation, pas à `1`. |
+| RG-A10 | **Split autorisé** | Une réservation peut être répartie sur plusieurs voitures si sa taille dépasse la capacité du véhicule ou si cela permet d'optimiser le remplissage. |
+| RG-A11 | **Remplissage complémentaire** | Après la réservation cible, la voiture est complétée avec d'autres réservations du groupe via un best-fit sur la capacité restante. |
+| RG-A12 | **Ordre du filler** | Le filler choisit la réservation la plus proche de la capacité restante sans réordonner les réservations fraîches déjà présentes dans le groupe. En cas d'égalité parfaite, la réservation avec le plus de passagers gagne; si l'égalité persiste, le choix est aléatoire. |
+| RG-A13 | **Recompute backlog** | Quand il existe un backlog, le moteur cherche d'abord le prochain retour véhicule; s'il n'existe pas encore de retour, il se cale sur la prochaine disponibilité statique des voitures. |
+| RG-A14 | **Heure de départ réelle** | L'heure de départ d'une voiture dépend de ses passagers réellement embarqués et de sa disponibilité réelle. Elle n'utilise plus la fin de la fenêtre du groupe par défaut. |
+| RG-A15 | **Retour véhicule** | L'heure de retour est calculée après l'itinéraire et la durée de trajet, puis enregistrée comme heure de disponibilité runtime de la voiture. |
+| RG-A16 | **Pas de groupe bloquant au dernier backlog** | Si plusieurs réservations sont en attente, l'algorithme garde les réservations de backlog devant les réservations fraîches et les réordonne par nombre de passagers restants, puis par heure d'arrivée, puis par identifiant. |
 
 ---
 
-## Flux de fonctionnement
+## Flux général
 
 ```
-1. Charger toutes les voitures (trajets = 0, disponibles à 00:00)
-2. Pour chaque groupe de réservations (même aéroport, triées par heure):
-   │
-   ├── Calculer le total de passagers et la fenêtre de temps [heure, heure + TA]
-   │
-   ├── Chercher la meilleure voiture DISPONIBLE:
-   │   ├── Capacité suffisante
-   │   ├── heureRetour <= heureDepart souhaitée
-   │   └── Priorité: moins de trajets > fit optimal > diesel
-   │
-   ├── Si TROUVÉE:
-   │   ├── Calculer heureDepart = max(heureArriveeClient, heureRetourVoiture)
-   │   ├── Calculer itinéraire et heureRetour
-   │   ├── Mettre à jour: voiture.trajets++, voiture.heureRetour
-   │   ├── Les réservations qui ne rentrent pas → reportées au prochain groupe
-   │   └── Créer l'assignation
-   │
-   └── Si NON TROUVÉE et qu'il y a d'autres réservations après:
-       └── Reporter TOUT le groupe au prochain groupe naturel
-           (pas de groupe spécial à l'heure de retour)
+1. Charger les voitures et initialiser leurs compteurs runtime
+   - nombreTrajets = 0
+   - heureRetourAeroport = null
 
-3. Si c'est le dernier groupe et aucune voiture disponible:
-   └── Attendre la prochaine voiture qui sera disponible
-```
+2. Charger les reservations du jour et les regrouper par aeroport d'atterrissage
 
----
+3. Pour chaque aeroport:
+   a. Trier les reservations par date d'arrivee croissante
+   b. Construire un premier groupe autour d'une reservation ancre
+   c. Tant qu'il reste des passagers a assigner:
+      - choisir la reservation cible
+      - choisir la meilleure voiture disponible
+      - affecter la reservation cible
+      - remplir la voiture avec d'autres reservations si possible
+      - calculer depart, itineraire, duree et retour
+      - incrementer le nombre de trajets de la voiture
 
-## Extraits de code
+4. Si une reservation ne peut pas etre servie maintenant:
+   - elle passe en attente avec ses passagers restants
+   - le moteur recompute quand une voiture redevient disponible
 
-### Entité `Voiture.java` — Champs de suivi des trajets
-
-```java
-// Champs runtime pour le suivi des trajets (non persistés en BDD)
-private int nombreTrajets = 0;
-private java.sql.Timestamp heureRetourAeroport = null; // null = disponible dès 00:00
-
-public int getNombreTrajets() {
-    return nombreTrajets;
-}
-
-public void incrementerTrajets() {
-    this.nombreTrajets++;
-}
-
-public java.sql.Timestamp getHeureRetourAeroport() {
-    return heureRetourAeroport;
-}
-
-public void setHeureRetourAeroport(java.sql.Timestamp heureRetourAeroport) {
-    this.heureRetourAeroport = heureRetourAeroport;
-}
-
-/**
- * Vérifie si la voiture est disponible à une heure donnée.
- */
-public boolean estDisponibleA(java.sql.Timestamp heure) {
-    if (heureRetourAeroport == null) {
-        return true; // Disponible dès le début
-    }
-    return heure != null && !heure.before(heureRetourAeroport);
-}
-```
-
-### Service `AssignationService.java` — Sélection de la meilleure voiture
-
-```java
-/**
- * Trouve la meilleure voiture disponible selon les règles:
- * 1. Capacité suffisante
- * 2. Disponible à l'heure demandée
- * 3. Priorité: moins de trajets > moins d'écart de places > diesel > ID
- */
-private Voiture trouverMeilleureVoitureDisponible(int nombrePassagers, Timestamp heureDepart) {
-    List<Voiture> candidates = new ArrayList<>();
-
-    for (Voiture v : voituresDisponibles) {
-        if (v.getNombrePlaces() >= nombrePassagers && v.estDisponibleA(heureDepart)) {
-            candidates.add(v);
-        }
-    }
-
-    if (candidates.isEmpty()) {
-        return null;
-    }
-
-    // Trier selon les critères de priorité
-    candidates.sort(new Comparator<Voiture>() {
-        @Override
-        public int compare(Voiture a, Voiture b) {
-            // 1. Nombre de trajets (moins = mieux)
-            int cmpTrajets = Integer.compare(a.getNombreTrajets(), b.getNombreTrajets());
-            if (cmpTrajets != 0) return cmpTrajets;
-
-            // 2. Écart de places (moins = mieux)
-            int ecartA = a.getNombrePlaces() - nombrePassagers;
-            int ecartB = b.getNombrePlaces() - nombrePassagers;
-            int cmpEcart = Integer.compare(ecartA, ecartB);
-            if (cmpEcart != 0) return cmpEcart;
-
-            // 3. Diesel préféré
-            boolean aDiesel = "D".equals(a.getTypeCarburant());
-            boolean bDiesel = "D".equals(b.getTypeCarburant());
-            if (aDiesel && !bDiesel) return -1;
-            if (!aDiesel && bDiesel) return 1;
-
-            // 4. ID comme tie-breaker
-            return Integer.compare(a.getId(), b.getId());
-        }
-    });
-
-    return candidates.get(0);
-}
-```
-
-### Service `AssignationService.java` — Calcul de l'heure de départ
-
-```java
-// Calculer l'heure de départ = max(heureArriveeMax, heureRetourVoiture)
-Timestamp heureDepart = heureArriveeMax;
-if (bestVoiture.getHeureRetourAeroport() != null && heureArriveeMax != null) {
-    if (bestVoiture.getHeureRetourAeroport().after(heureArriveeMax)) {
-        heureDepart = bestVoiture.getHeureRetourAeroport();
-    }
-}
-
-// Mettre à jour l'heure de retour de la voiture après le trajet
-if (assignation.getHeureRetourAeroport() != null && heureDepart != null) {
-    String heureRetourStr = heureDepart.toString().substring(0, 11)
-        + assignation.getHeureRetourAeroport() + ":00";
-    Timestamp heureRetour = Timestamp.valueOf(heureRetourStr);
-    bestVoiture.setHeureRetourAeroport(heureRetour);
-}
-
-// Incrémenter le compteur de trajets
-bestVoiture.incrementerTrajets();
+5. Si aucune voiture future n'est disponible:
+   - les reservations restantes sont marquees non assignees
 ```
 
 ---
 
-## Exemples de scénarios
+## Détail des méthodes helper
 
-### Exemple 1 — Priorité par nombre de trajets
+### `getAllVoitures()`
+Récupère les voitures en base avec leurs attributs persistés:
+- immatriculation,
+- nombre de places,
+- type de carburant,
+- vitesse moyenne,
+- temps d'attente,
+- heure de disponibilité initiale.
 
-**Données:**
-- Voiture V1 (diesel, 5 places): 0 trajet
-- Voiture V2 (essence, 5 places): 0 trajet
-- Réservation R1: 04:00, 3 passagers
+Les champs runtime `nombreTrajets` et `heureRetourAeroport` sont ensuite initialisés en mémoire.
 
-**Résultat:**
-- R1 → **V1** (diesel prioritaire car égalité de trajets)
-- V1.trajets = 1, V1.heureRetour = ~05:00
+### `initialiserVoituresDisponibles()`
+Prépare le stock runtime des voitures avant l'assignation:
+- charge la liste des voitures,
+- remet `nombreTrajets` à `0`,
+- remet `heureRetourAeroport` à `null`.
 
-**Suite:**
-- Réservation R2: 05:30, 3 passagers
-- V1 a fait 1 trajet, V2 a fait 0 trajet
-- R2 → **V2** (moins de trajets que V1)
+### `regrouperReservationsParAeroport(List<Reservation>)`
+Construit une map `aeroportId -> liste de reservations`.
 
-### Exemple 2 — Voiture indisponible temporairement
+Rôle:
+- séparer les flux par aéroport d'atterrissage,
+- garantir qu'un groupe ne mélange pas des destinations différentes.
 
-**Données:**
-- V1 (30 places) part à 04:30, retour prévu 05:30
-- Client arrive à 05:00 avec 28 passagers
+### `trierReservationsParArrivee(List<Reservation>)`
+Trie les réservations d'un aéroport:
+- heure d'arrivée croissante,
+- puis ID croissant si deux réservations ont la même heure.
 
-**Résultat:**
-- Aucune autre voiture ne peut prendre 28 passagers
-- Attendre V1 qui revient à 05:30
-- Départ du client = **05:30** (pas 05:00)
+Ce tri alimente le premier groupe et les recomputes.
 
-```
-Timeline:
-04:30 ─────────── V1 en trajet ──────────── 05:30
-        05:00                                 ↓
-        Client arrive                    V1 disponible
-        (attend)                         Départ client
-```
+### `extraireReservationPrioritaire(List<Reservation>, Map<Integer, ReservationEnAttente>)`
+Extrait la prochaine réservation ancre:
+- d'abord la réservation de backlog la plus lourde s'il existe un backlog,
+- sinon la première réservation restante triée par heure.
 
-### Exemple 3 — Report au prochain groupe (RG-T9)
+Rôle:
+- préserver la priorité du backlog,
+- éviter qu'une réservation fraîche prenne la main sur une réservation déjà en attente.
 
-**Données:**
-- V1 (30 places, seule capable) part à 04:00, retour prévu 05:00
-- R1: 04:30, 28 passagers (aucune voiture disponible à 04:30)
-- R2: 10:30, 2 passagers (prochaine réservation)
+### `construireGroupeFenetre(...)`
+Construit le premier groupe autour d'une réservation ancre:
+- prend la réservation principale,
+- ajoute les réservations dans la fenêtre `TA` minutes autour de cette ancre,
+- récupère les passagers restants si certaines réservations étaient déjà en backlog,
+- trie le groupe pour que le backlog passe avant les nouvelles réservations.
 
-**Comportement INCORRECT (ancien):**
-- R1 crée un groupe spécial à 05:00 (heure retour V1)
-- Départ de R1 = 05:00
+Ce helper est utilisé pour le premier passage naturel d'un aéroport.
 
-**Comportement CORRECT (nouveau):**
-- R1 n'a pas de voiture disponible à 04:30
-- R1 est **reportée au prochain groupe** (celui de 10:30)
-- R1 et R2 sont regroupées ensemble
-- Départ = 10:30 (pas 05:00)
+### `construireGroupeAutourDeRetour(...)`
+Construit un groupe de recompute autour d'une heure de retour ou de disponibilité future:
+- inclut toutes les réservations déjà en backlog,
+- ajoute les réservations restantes dans la fenêtre `[retour - TA, retour]`,
+- retire ces réservations des listes de travail,
+- conserve la priorité du backlog sur les réservations fraîches,
+- classe le backlog par nombre de passagers restants décroissant, puis par heure d'arrivée, puis par ID.
 
-```
-Timeline:
-04:00 ──── V1 en trajet ──── 05:00     10:30
-  │                            │          │
-04:30                       V1 revient   R1 + R2
-R1 arrive                   (non utilisé  regroupées
-(pas de voiture)             à 05:00)    → Départ
-```
+Ce helper permet au moteur de relancer le calcul quand une voiture redevient disponible.
 
-**Raison:** On ne crée pas de groupe spécial à l'heure de retour de la voiture. La réservation attend le prochain groupe naturel de réservations.
+### `trierGroupeParPassagersRestants(...)`
+Trie le groupe actif selon deux règles différentes:
+- les réservations déjà en attente sont ordonnées par nombre de passagers restants décroissant,
+  puis par heure d'arrivée, puis par ID,
+- les réservations fraîches gardent leur ordre d'origine dans le groupe.
 
-### Exemple 4 — Répartition équitable
+C'est la clé pour éviter qu'une réservation fraîche dépasse une réservation déjà en attente, tout en gardant l'ordre des fraîches stable.
 
-**Données (fin de journée):**
-- V1: 3 trajets effectués
-- V2: 2 trajets effectués
-- V3: 4 trajets effectués
-- Nouvelle réservation: 3 passagers
+### `trouverReservationCibleMeilleurFit(...)`
+Choisit la réservation cible pour les tours suivants dans le groupe:
+- priorité aux réservations de backlog si elles existent,
+- parmi les réservations de backlog, priorité au plus grand nombre de passagers restants,
+- en cas d'égalité, la réservation qui produit le meilleur fit avec une voiture disponible,
+- puis l'ID le plus faible si nécessaire.
 
-**Résultat:**
-- **V2** est sélectionnée (2 trajets, le minimum)
-- Même si V1 est diesel et V2 essence, le nombre de trajets prime
+Important:
+- cette méthode ne doit pas faire passer une réservation fraîche devant une réservation déjà en backlog.
+
+### `trouverMeilleureVoitureDisponible(...)`
+Sélectionne la voiture qui peut servir complètement la réservation cible.
+
+Priorités appliquées:
+1. le plus petit nombre de trajets,
+2. le plus petit écart de places,
+3. diesel avant essence,
+4. hasard uniquement si tout est encore à égalité.
+
+Cette méthode est utilisée quand on veut servir entièrement la réservation cible.
+
+### `trouverMeilleureVoiturePourCible(...)`
+Sélectionne la meilleure voiture même si la réservation cible ne peut pas être servie en totalité.
+
+Elle applique les mêmes priorités que le sélecteur principal, mais compare toujours la capacité à la taille réelle de la réservation cible.
+
+Rôle:
+- éviter que le fallback réduise artificiellement la réservation à une demande de `1` passager,
+- conserver le vrai best-fit sur la réservation cible.
+
+### `assignerReservationCible(...)`
+Ajoute la réservation cible à l'assignation:
+- assigne tout si un full fit est possible,
+- sinon assigne seulement ce qui rentre,
+- met à jour le nombre de passagers restants,
+- trace si l'assignation est partielle ou complète.
+
+### `remplirVoitureAvecAutresReservations(...)`
+Complète la voiture avec d'autres réservations du groupe après la cible principale.
+
+Le but est de maximiser le remplissage sans casser la priorité de la réservation cible.
+Les réservations fraîches conservent leur ordre relatif pendant ce remplissage.
+
+### `trouverMeilleureReservationPourCapacite(...)`
+Choisit la meilleure réservation pour remplir les places restantes d'une voiture:
+- meilleur écart absolu avec la capacité restante,
+- puis le plus grand nombre de passagers restants,
+- puis un choix aléatoire entre les candidats encore à égalité.
+
+Rôle:
+- faire du vrai best-fit de remplissage,
+- éviter de gaspiller des places.
+
+### `calculerHeureDepart(AssignationVoiture, Voiture)`
+Calcule l'heure de départ réelle à partir:
+- de la dernière arrivée parmi les réservations réellement embarquées,
+- et de la disponibilité actuelle de la voiture.
+
+Règle:
+- le départ est le maximum entre l'heure des passagers réellement servis et la disponibilité de la voiture.
+
+### `trouverHeureDisponibiliteCourante(Voiture)`
+Retourne la disponibilité runtime effective de la voiture:
+- heure de disponibilité initiale,
+- ou heure de retour si la voiture a déjà roulé et que ce retour est plus tardif.
+
+### `finaliserAssignation(...)`
+Termine le traitement d'une voiture:
+- fixe l'assignation,
+- calcule l'itinéraire,
+- calcule la durée,
+- enregistre l'heure de retour runtime,
+- trace le départ et le retour.
+
+### `trouverProchaineHeureRetourVoitureApres(...)`
+Cherche le prochain retour de voiture après une borne donnée.
+
+Utilité:
+- alimenter le recompute quand un backlog existe et qu'une voiture revient.
+
+### `trouverProchaineHeureDisponibiliteVoitureApres(...)`
+Cherche la prochaine disponibilité future en tenant compte:
+- de l'heure de disponibilité initiale,
+- de l'heure de retour runtime si elle est plus tardive.
+
+Utilité:
+- éviter le blocage quand il n'existe encore aucun retour runtime,
+- permettre au backlog d'attendre la prochaine voiture réellement utilisable.
+
+### `marquerPassagersNonAssignes(...)`
+Marque les passagers encore non servis quand il n'existe plus aucune solution future.
+
+Rôle:
+- produire le résultat final visible côté interface,
+- ne pas confondre un simple report avec un échec définitif.
 
 ---
 
-## Modèle de données
+## Points importants de comportement
 
-### Champs runtime (en mémoire, non persistés)
+### 1. Le backlog reste devant
+Une réservation déjà en attente reste prioritaire sur une réservation fraîche. Dans le backlog, les réservations les plus lourdes passent d'abord.
 
-```
-Voiture
-├── nombreTrajets (int, default 0)      -- Compteur de trajets du jour
-├── heureRetourAeroport (Timestamp)     -- Heure de disponibilité
-└── estDisponibleA(heure) (méthode)     -- Vérifie la disponibilité
-```
+### 2. Une réservation partiellement servie garde la main
+Si une réservation a été coupée entre plusieurs voitures, la partie restante doit continuer à être servie avant de laisser passer une autre réservation du même groupe.
 
-### Flux de mise à jour
+### 3. Les réservations fraîches gardent leur ordre
+Quand plusieurs réservations fraîches sont regroupées ensemble, leur ordre relatif n'est pas réordonné par le split ou le filler.
 
-```
-Initialisation (00:00)
-├── Toutes les voitures: trajets=0, heureRetour=null
+### 4. Le choix de voiture reste indépendant de la priorité de réservation
+La priorité de réservation détermine **quelle réservation** est servie.
+La priorité de voiture détermine **quel véhicule** est utilisé pour cette réservation.
 
-Après chaque assignation
-├── voiture.trajets++
-└── voiture.heureRetour = heureDepart + tempsTrajet
-```
+### 5. Le départ dépend des passagers réellement embarqués
+Le départ n'est plus basé sur la fin de la fenêtre du groupe, mais sur:
+- les réservations réellement embarquées,
+- la disponibilité effective du véhicule.
+
+---
+
+## Exemples de lecture des logs
+
+### Log `[Wait]`
+Une réservation cible n'a pas trouvé de véhicule disponible maintenant.
+
+Effet:
+- seule cette réservation passe en attente,
+- le groupe continue,
+- un recompute sera tenté plus tard.
+
+### Log `[Recompute] Aucun retour en cours; prochaine disponibilite ...`
+Le backlog existe, mais aucun véhicule n'a encore de retour runtime exploitable.
+
+Effet:
+- le moteur se cale sur la prochaine disponibilité statique d'une voiture.
+
+### Log `[Assignation partielle]`
+La voiture n'a pas assez de places pour couvrir la réservation cible en totalité.
+
+Effet:
+- le reste de la réservation est conservé en backlog avec priorité.
+
+### Log `[Trajet] ... Départ: ... - Retour prévu: ...`
+Le départ réel et le retour runtime de la voiture ont été calculés et enregistrés.
+
+---
+
+## Résumé
+
+L'algorithme actuel n'est plus un simple tri glouton par capacité. C'est un moteur de planification avec:
+- priorité backlog,
+- priorité backlog puis volume de passagers restants,
+- split de réservation,
+- best-fit véhicule,
+- recompute sur retour ou disponibilité future,
+- départ calculé sur les passagers réellement embarqués.
 
 ---
 
@@ -291,11 +319,11 @@ Script: `database-scripts/03-17_test_nombre_trajets.sql`
 | Fichier | Modifications |
 |---------|--------------|
 | `Voiture.java` | Ajout `nombreTrajets`, `heureRetourAeroport`, `estDisponibleA()` |
-| `AssignationService.java` | Nouvelle logique de sélection avec priorité trajets |
+| `AssignationService.java` | Logique d'assignation par backlog, split et recompute |
 | `03-17_test_nombre_trajets.sql` | Script de test des nouvelles règles |
 
 ---
 
 ## Résumé
 
-La méthode `assignerVoitures` assure maintenant une **répartition équitable** des trajets entre les voitures tout en respectant la **disponibilité temporelle**. Les voitures qui ont moins travaillé sont prioritaires, et les clients sont servis dès qu'une voiture adaptée devient disponible, même si cela implique un délai d'attente.
+La méthode `assignerVoitures` assure maintenant une **répartition par groupes et backlog** tout en respectant la **disponibilité temporelle**. Les voitures qui ont moins travaillé restent prioritaires pour le choix du véhicule, mais l'ordre des réservations est d'abord piloté par le backlog, puis par le volume de passagers restants.

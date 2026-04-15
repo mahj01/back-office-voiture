@@ -97,7 +97,7 @@ button:hover {
 <% } else { %>
     <p>Aucune donnée disponible pour la voiture (id=<%= id %>).</p>
 <% } %>
-<p><a href="liste">Retour à la liste</a></p>
+<p><a href="/frameworktest/voiture/liste">Retour à la liste</a></p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

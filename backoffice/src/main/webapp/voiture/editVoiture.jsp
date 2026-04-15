@@ -91,7 +91,7 @@ button:hover {
         try { v.setId(Integer.parseInt(sid)); } catch(Exception e) {}
     }
 %>
-<form method="post" action="update">
+<form method="post" action="/frameworktest/voiture/update">
     <input type="hidden" name="id" value="<%= (v!=null?v.getId(): (request.getParameter("id")!=null?request.getParameter("id"):"")) %>">
     <label>Matricule: <input type="text" name="matricule" value="<%= (v!=null?v.getMatricule():request.getParameter("matricule")) %>" required></label><br>
     <label>Marque: <input type="text" name="marque" value="<%= (v!=null?v.getMarque():request.getParameter("marque")) %>" required></label><br>
@@ -102,7 +102,7 @@ button:hover {
     <label>Temps d'attente (min): <input type="number" step="0.01" min="0" name="tempAttente" value="<%= (v!=null && v.getTempAttente()!=null ? v.getTempAttente() : "") %>"></label><br>
     <button type="submit">Mettre à jour</button>
 </form>
-<p><a href="liste">Retour à la liste</a></p>
+<p><a href="/frameworktest/voiture/liste">Retour à la liste</a></p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

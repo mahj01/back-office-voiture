@@ -7,7 +7,8 @@
 <nav id="sidebar">
     <div class="sidebar-header">
         <a href="<%= ctx %>/" class="sidebar-brand">
-            <i class="bi bi-speedometer2"></i> Back Office
+            <i class="bi bi-speedometer2"></i>
+            <b>3344 - 3275 - 3342</b>
         </a>
     </div>
     <ul class="sidebar-nav">

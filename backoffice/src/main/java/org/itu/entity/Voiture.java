@@ -13,6 +13,7 @@ public class Voiture {
     private String typeCarburant;
     private BigDecimal vitesseMoyenne;
     private BigDecimal tempAttente;
+    private java.sql.Timestamp departHeureDisponibilite;
 
     // Champs runtime pour le suivi des trajets (non persistés en BDD)
     private int nombreTrajets = 0;
@@ -73,6 +74,12 @@ public class Voiture {
     public void setTempAttente(BigDecimal tempAttente) {
         this.tempAttente = tempAttente;
     }
+    public java.sql.Timestamp getDepartHeureDisponibilite() {
+        return departHeureDisponibilite;
+    }
+    public void setDepartHeureDisponibilite(java.sql.Timestamp departHeureDisponibilite) {
+        this.departHeureDisponibilite = departHeureDisponibilite;
+    }
     public Voiture(int id, String matricule, String marque, String modele, int nombrePlaces, String typeCarburant) {
         this.id = id;
         this.matricule = matricule;
@@ -92,6 +99,12 @@ public class Voiture {
         this.tempAttente = tempAttente;
     }
 
+    public Voiture(int id, String matricule, String marque, String modele, int nombrePlaces, String typeCarburant,
+            BigDecimal vitesseMoyenne, BigDecimal tempAttente, java.sql.Timestamp departHeureDisponibilite) {
+        this(id, matricule, marque, modele, nombrePlaces, typeCarburant, vitesseMoyenne, tempAttente);
+        this.departHeureDisponibilite = departHeureDisponibilite;
+    }
+
     public void delete() {
         String sql = "DELETE FROM voiture WHERE id = ?";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
@@ -104,7 +117,7 @@ public class Voiture {
     }
 
     public void createVoiture() {
-        String sql = "INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO voiture (matricule, marque, model, nombre_place, type_carburant, vitesse_moyenne, temp_attente, depart_heure_disponibilite) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setString(1, this.matricule);
             stmt.setString(2, this.marque);
@@ -113,6 +126,7 @@ public class Voiture {
             stmt.setString(5, this.typeCarburant);
             stmt.setBigDecimal(6, this.vitesseMoyenne);
             stmt.setBigDecimal(7, this.tempAttente);
+            stmt.setTimestamp(8, this.departHeureDisponibilite);
             stmt.executeUpdate();
             System.out.println("Voiture créée avec succès.");
         } catch (java.sql.SQLException e) {
@@ -121,7 +135,7 @@ public class Voiture {
     }
 
     public void updateVoiture() {
-        String sql = "UPDATE voiture SET matricule = ?, marque = ?, model = ?, nombre_place = ?, type_carburant = ?, vitesse_moyenne = ?, temp_attente = ? WHERE id = ?";
+        String sql = "UPDATE voiture SET matricule = ?, marque = ?, model = ?, nombre_place = ?, type_carburant = ?, vitesse_moyenne = ?, temp_attente = ?, depart_heure_disponibilite = ? WHERE id = ?";
         try (java.sql.PreparedStatement stmt = db.getConnection().prepareStatement(sql)) {
             stmt.setString(1, this.matricule);
             stmt.setString(2, this.marque);
@@ -130,7 +144,8 @@ public class Voiture {
             stmt.setString(5, this.typeCarburant);
             stmt.setBigDecimal(6, this.vitesseMoyenne);
             stmt.setBigDecimal(7, this.tempAttente);
-            stmt.setInt(8, this.id);
+            stmt.setTimestamp(8, this.departHeureDisponibilite);
+            stmt.setInt(9, this.id);
             stmt.executeUpdate();
             System.out.println("Voiture mise à jour avec succès.");
         } catch (java.sql.SQLException e) {
@@ -167,9 +182,17 @@ public class Voiture {
      * - Ou si l'heure donnée est >= heureRetourAeroport
      */
     public boolean estDisponibleA(java.sql.Timestamp heure) {
-        if (heureRetourAeroport == null) {
-            return true; // Disponible dès le début
+        if (heure == null) {
+            return departHeureDisponibilite == null && heureRetourAeroport == null;
         }
-        return heure != null && !heure.before(heureRetourAeroport);
+
+        // Seuil effectif = max(depart_heure_disponibilite, heure_retour_runtime)
+        java.sql.Timestamp seuilDisponibilite = departHeureDisponibilite;
+        if (heureRetourAeroport != null
+                && (seuilDisponibilite == null || heureRetourAeroport.after(seuilDisponibilite))) {
+            seuilDisponibilite = heureRetourAeroport;
+        }
+
+        return seuilDisponibilite == null || !heure.before(seuilDisponibilite);
     }
 }

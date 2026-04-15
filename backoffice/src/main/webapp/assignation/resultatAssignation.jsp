@@ -61,6 +61,11 @@
             List<Reservation> groupReservations = assignation.getReservations();
             boolean isGrouped = assignation.isGrouped();
             boolean hasVoiture = v != null;
+            Reservation departReservation = assignation.getReservation();
+            String departAssignation = departReservation != null && departReservation.getDateArriver() != null
+                && departReservation.getDateArriver().length() >= 16
+                    ? departReservation.getDateArriver().substring(0, 16)
+                    : "N/A";
 %>
     <!-- Carte Voiture #<%= voitureIndex %> -->
     <div class="card mb-4 shadow-sm voiture-card<%= !hasVoiture ? " no-voiture" : "" %>">
@@ -241,6 +246,13 @@
                                     <% } else { %><span class="text-muted fs-6">N/A</span><% } %>
                                 </div>
                                 <div class="small text-muted">heure estimée</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card text-center p-2 border-success h-100">
+                                <div class="small text-muted"><i class="bi bi-calendar-event"></i> Départ assignation</div>
+                                <div class="fw-bold text-success fs-5"><%= departAssignation %></div>
+                                <div class="small text-muted">date et heure de départ</div>
                             </div>
                         </div>
                     </div>

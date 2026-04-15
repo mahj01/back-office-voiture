@@ -37,7 +37,7 @@
         %>
 
         <p>
-            <a class="button" href="../liste">Retour à la liste des voitures</a>
+            <a class="button" href="/frameworktest/voiture/liste">Retour à la liste des voitures</a>
         </p>
     </div>
 </div>
